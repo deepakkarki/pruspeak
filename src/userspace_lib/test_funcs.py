@@ -1,3 +1,13 @@
+AND_SCRIPT = '''\
+SCRIPT
+SET i, 0xAA
+SET j, 0xF0
+AND i, j
+GET i
+ENDSCRIPT
+RUN
+'''
+
 SCRIPT = '''\
 SET delay, 500
 SET loop, flash
@@ -38,6 +48,11 @@ SET loop, flash2
 
 from pru_speak import pru_speak
 import time
+
+print "Performing AND operation"
+ret = pru_speak.execute_instruction(AND_SCRIPT)
+print ret
+time.sleep(5)
 
 print "Starting flashing LED"
 ret = pru_speak.execute_instruction(SCRIPT)

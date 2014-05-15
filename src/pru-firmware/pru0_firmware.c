@@ -748,6 +748,10 @@ void execute_instruction()
 		case ADD_64:
 		case SUB_32:
 		case SUB_64:
+		case AND_32:
+		case AND_64:
+		case OR_32:
+		case OR_64:
 			math_handler(opcode, inst);
 		break;
 		
