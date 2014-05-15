@@ -48,6 +48,7 @@ t_LT		=  r'<'
 t_EQ		=  r'=='
 t_NEQ		=  r'!='
 t_ignore		=  ' \t'
+t_ignore_comment    =  r';.*$'
 
 literals = '[](),'
 

@@ -789,8 +789,9 @@ def p_inst_SYSTEM(p):
 	
 # Error rule for syntax errors
 def p_error(p):
-	print p
-	print "Syntax error in input!"
+	if p != None:
+		print p
+		print "Syntax error in input!"
 
 
 # Build the parser
