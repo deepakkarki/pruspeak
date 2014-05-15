@@ -111,7 +111,7 @@
 			#size-cells = <1>;
 
 			prurproc {
-				compatible = "ti,pru_speak";
+				compatible = "ti,pru-rproc";
 
 				pinctrl-names = "default";
 				pinctrl-0 = <&pru_pru_pins>;
@@ -318,6 +318,11 @@
 
 				};
 
+			};
+
+			pru_speak {
+				compatible = "ti,pru_speak";
+				status = "okay";
 			};
 		};
 	};
