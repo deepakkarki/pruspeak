@@ -36,7 +36,7 @@ while True:
 				conn.send('\n')
 			else:
 				#the sends the list of ret values as a string sperated by " "
-	        	        conn.send(" ".join(map(str, ret)))
+	        	        conn.send(" ".join(map(str, ret)) + "\n")
 
 	        except Exception as e:
                 	print e
