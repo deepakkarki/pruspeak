@@ -8,20 +8,96 @@ SET data_ncommand, 0
 SET last_x, 0
 SET last_y, 0
 SET data, 0
-SET next_op, 1
-SET write, 0
+SET next_op, 0
+SET ascii[], 5
 
 SCRIPT
 GOTO next_op
 
-; setup
+LBL write
+SET DIO[dc], data_ncommand
+SET DIO[sce], 0
+SET DIO[sdin], 1
+SET i, 0x80
+AND i, data
+IF (i == 0x80) GOTO bit7_high
+SET DIO[sdin], 0
+LBL bit7_high
+SET DIO[sclk], 1
+SET DIO[sclk], 0
+SET DIO[sdin], 1
+SET i, 0x40
+AND i, data
+IF (i == 0x40) GOTO bit6_high
+SET DIO[sdin], 0
+LBL bit6_high
+SET DIO[sclk], 1
+SET DIO[sclk], 0
+SET DIO[sdin], 1
+SET i, 0x20
+AND i, data
+IF (i == 0x20) GOTO bit5_high
+SET DIO[sdin], 0
+LBL bit5_high
+SET DIO[sclk], 1
+SET DIO[sclk], 0
+SET DIO[sdin], 1
+SET i, 0x10
+AND i, data
+IF (i == 0x10) GOTO bit4_high
+SET DIO[sdin], 0
+LBL bit4_high
+SET DIO[sclk], 1
+SET DIO[sclk], 0
+SET DIO[sdin], 1
+SET i, 0x08
+AND i, data
+IF (i == 0x08) GOTO bit3_high
+SET DIO[sdin], 0
+LBL bit3_high
+SET DIO[sclk], 1
+SET DIO[sclk], 0
+SET DIO[sdin], 1
+SET i, 0x04
+AND i, data
+IF (i == 0x04) GOTO bit2_high
+SET DIO[sdin], 0
+LBL bit2_high
+SET DIO[sclk], 1
+SET DIO[sclk], 0
+SET DIO[sdin], 1
+SET i, 0x02
+AND i, data
+IF (i == 0x02) GOTO bit1_high
+SET DIO[sdin], 0
+LBL bit1_high
+SET DIO[sclk], 1
+SET DIO[sclk], 0
+SET DIO[sdin], 1
+SET i, 0x01
+AND i, data
+IF (i == 0x01) GOTO bit0_high
+SET DIO[sdin], 0
+LBL bit0_high
+SET DIO[sclk], 1
+SET DIO[sclk], 0
+SET DIO[sce], 1
+IF (data_ncommand != 1) GOTO next_op
+ADD last_x, 1
+IF (last_x != 84) GOTO next_op
+SET last_x, 0
+ADD last_y, 1
+IF (last_y != 48) GOTO next_op
+SET last_y, 0
+GOTO next_op
+
+LBL setup
 SET DIO[reset], 0
 SET DIO[reset], 1
 SET data_ncommand, 0
 SET data, 0x21
 SET next_op, setup_1
 GOTO write
-
 LBL setup_1
 SET data, 0xB1
 SET next_op, setup_2
@@ -42,22 +118,6 @@ LBL setup_5
 SET data, 0x0C
 SET next_op, 0
 GOTO write
-
-; write
-SET DIO[dc], data_ncommand
-SET DIO[sce], 0
-SET DIO[sclk], 1
-SET DIO[sclk], 0
-SET DIO[sce], 1
-IF (data_ncommand != 1) GOTO next_op
-ADD last_x, 1
-IF (last_x != 84) GOTO next_op
-ADD last_y, 1
-IF (last_x != 84) GOTO next_op
-SET last_x, 0
-IF (last_y != 48) GOTO next_op
-SET last_y, 0
-GOTO next_op
 
 ENDSCRIPT
 RUN

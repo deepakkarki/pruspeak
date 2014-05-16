@@ -38,11 +38,14 @@ class PruSpeak:
 
 	def add_to_script_listing(self, byte_code, inst):
 		self.script_listing = self.script_listing + str(self.script_index)
-		self.script_listing = self.script_listing + "\t" + str(byte_code)
-		self.script_listing = self.script_listing + "\t" + inst + "\n"
 		if type(byte_code) == tuple:
+			self.script_listing = self.script_listing + "\t0x%08X" % byte_code[0]
+			self.script_listing = self.script_listing + "\t" + inst + "\n"
+			self.script_listing = self.script_listing + "\t0x%08X\n" % byte_code[1]
 			self.script_index = self.script_index + len(byte_code)
 		else:
+			self.script_listing = self.script_listing + "\t0x%08X" % byte_code
+			self.script_listing = self.script_listing + "\t" + inst + "\n"
 			self.script_index = self.script_index + 1
 		
 	def execute_instruction(self, cmd_set):

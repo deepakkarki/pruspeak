@@ -660,7 +660,7 @@ def p_inst_LBL(p):
 	global pru_var_count
 	byte2 = pru_vars.get(p[2], None)
 	if byte2 == None:
-		pru_vars[p[2].val] = pru_var_count
+		pru_vars[p[2]] = pru_var_count
 		byte2 = pru_var_count
 		pru_var_count += 1
 	p[0] = pack_byte(0x10, byte2, 0, 0)
