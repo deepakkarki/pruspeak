@@ -11,7 +11,9 @@ import kernel_lib
 class PruSpeak:
 	def __init__(self):
 		self.script_mode = False
-		self.script_code = []	
+		self.script_code = []
+		self.script_listing = ""
+		self.script_index = 0
                 print "Initializing PRU Speak"
 
 		#reset any previous state in the PRU
@@ -33,6 +35,15 @@ class PruSpeak:
 		#strip each instruction, incase an element is '', then throw it out
 		code = filter( lambda y : y != '', map(lambda x : x.strip(), code) )
 		return code	
+
+	def add_to_script_listing(self, byte_code, inst):
+		self.script_listing = self.script_listing + str(self.script_index)
+		self.script_listing = self.script_listing + "\t" + str(byte_code)
+		self.script_listing = self.script_listing + "\t" + inst + "\n"
+		if type(byte_code) == tuple:
+			self.script_index = self.script_index + len(byte_code)
+		else:
+			self.script_index = self.script_index + 1
 		
 	def execute_instruction(self, cmd_set):
 		'''
@@ -53,6 +64,8 @@ class PruSpeak:
 					bs_parse.script_mode = True
 					bs_parse.script_inst_size = []
 					self.script_code = [ ]
+					self.script_listing = ""
+					self.script_index = 0
 				#else Error
 				else:
 					return return_values.append(-1)
@@ -62,6 +75,8 @@ class PruSpeak:
 					self.script_mode = False
 					bs_parse.script_mode = False
 					self.script_code.append(parser.parse('HALT'))
+					self.add_to_script_listing(parser.parse('HALT'), "ENDSCRIPT")
+					print self.script_listing
 				else:
 					return return_values.append(-1)
 			
@@ -95,11 +110,13 @@ class PruSpeak:
 				#64 bit instruction
 					self.script_code.extend(byte_code)
 					bs_parse.script_inst_size.append(len(byte_code))
+					self.add_to_script_listing(byte_code, inst)
 				
 				elif type(byte_code) == int:
 				#32 bit instruction
 					self.script_code.append(byte_code)
 					bs_parse.script_inst_size.append(1)
+					self.add_to_script_listing(byte_code, inst)
 						
 				else :
 				#error
