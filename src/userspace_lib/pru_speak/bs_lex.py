@@ -26,7 +26,8 @@ reserved = [
 	'ABORT',
 	'HALT',
 	'SYSTEM',
-	'DEBUG'
+	'DEBUG',
+	'LBL'
 ]
 
 tokens = [

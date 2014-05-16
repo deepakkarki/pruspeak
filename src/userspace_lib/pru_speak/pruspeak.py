@@ -79,7 +79,7 @@ class PruSpeak:
 					print self.script_listing
 				else:
 					return return_values.append(-1)
-			
+
 			elif inst == 'RUN':
 				if self.script_code and (not self.script_mode):
 						print self.script_code
@@ -106,7 +106,13 @@ class PruSpeak:
 				#incase there is an ongoing SCRIPT being defined
 				byte_code  = parser.parse(inst)
 			
-				if type(byte_code) == tuple:
+				if inst[:3] == 'LBL':
+					# LBL instructions always execute immediately
+					byte_code = bs_parse.add_label(byte_code, self.script_index)
+					ret = kernel_lib.single_instruction(byte_code)
+					print inst + ", " + str(self.script_index) 
+
+				elif type(byte_code) == tuple:
 				#64 bit instruction
 					self.script_code.extend(byte_code)
 					bs_parse.script_inst_size.append(len(byte_code))
