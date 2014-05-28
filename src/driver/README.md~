@@ -1,4 +1,4 @@
-PRU Speak Driver
+#PRU Speak Driver
 =================
 
 This is the remote proc driver for the PRU Speak firmware. 
