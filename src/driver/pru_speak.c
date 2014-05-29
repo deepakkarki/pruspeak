@@ -13,17 +13,50 @@
 #include <linux/of_device.h>
 #include <linux/platform_device.h>
 #include <asm/atomic.h>
+#include <linux/sysfs.h>
+#include <linux/fs.h>
+#include <asm/uaccess.h>
+
+//this is the buffer which is maintained for read and write into the pru_speak_sysfs file - just temp, to check if everything works
+static char data[100];
+
+/*
+*functions to handle sysfs load and store for the file "pru_speak_sysfs"
+*/
+
+static ssize_t pru_speak_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+        printk(KERN_INFO "sysfs show called\n");
+        return scnprintf(buf, PAGE_SIZE, "%s\n", data);
+}
+
+static ssize_t pru_speak_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{       
+        printk(KERN_INFO "sysfs store called\n");
+        return scnprintf(data, sizeof(data), "%s", buf);
+}
+
+static DEVICE_ATTR(pru_speak_sysfs, S_IWUSR | S_IRUGO, pru_speak_show, pru_speak_store);
+//DEVICE_ATTR(name, mode, show, store);
 
 static int pru_speak_probe(struct platform_device *pdev)
 {
-	printk(KERN_INFO "pru_speak probed\n");
-	return 0;
+        int err;
+        struct device *dev = &pdev->dev;
+        printk(KERN_INFO "pru_speak probed\n");
+        err = device_create_file(dev, &dev_attr_pru_speak_sysfs);
+        if (err != 0){
+                printk(KERN_INFO "sysfs file creation failed");
+        }
+        return 0;
 }
 
 static int pru_speak_remove(struct platform_device *pdev)
 {
-	printk(KERN_INFO "pru_speak removed\n");
-	return 0;
+        struct device *dev = &pdev->dev;
+        printk(KERN_INFO "pru_speak removed\n");
+        device_remove_file(dev, &dev_attr_pru_speak_sysfs);
+        return 0;
 }
 
 
