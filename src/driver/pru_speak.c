@@ -17,6 +17,36 @@
 #include <linux/fs.h>
 #include <asm/uaccess.h>
 
+#define BIN_ATTR(_name,_mode,_size,_read,_write,_mmap) { \
+       .attr = { .name  =  __stringify(_name),  .mode = _mode  },   \
+       .size = _size,                                         \
+       .read   = _read,                                      \
+       .write  = _write,                                      \
+       .mmap = _mmap,                                   \
+}
+
+
+static ssize_t bin_file_read(struct file * f, struct kobject *kobj, struct bin_attribute *attr, char *buffer, loff_t pos, size_t size)
+{
+        printk(KERN_INFO "READ called on BIN FILE\n");
+        return (ssize_t)0;
+}
+
+static ssize_t bin_file_write(struct file *f, struct kobject *kobj, struct bin_attribute *attr, char *buffer, loff_t pos, size_t size)
+{
+        printk(KERN_INFO "WRITE called on BIN FILE\n");
+        return (ssize_t)0;
+}
+
+static int bin_file_mmap(struct file *f, struct kobject *kobj, struct bin_attribute *attr,  struct vm_area_struct *vma)
+{
+        printk(KERN_INFO "MMAP called on BIN FILE\n");
+        return 0;
+}
+
+static struct bin_attribute pru_speak_bin_attr = BIN_ATTR(pru_speak_binfile, S_IWUSR | S_IRUGO, PAGE_SIZE, bin_file_read, bin_file_write, bin_file_mmap);
+
+
 //this is the buffer which is maintained for read and write into the pru_speak_sysfs file - just temp, to check if everything works
 static char data[100];
 
@@ -48,6 +78,10 @@ static int pru_speak_probe(struct platform_device *pdev)
         if (err != 0){
                 printk(KERN_INFO "sysfs file creation failed");
         }
+	err = sysfs_create_bin_file(&(dev->kobj), &pru_speak_bin_attr);
+	if (err != 0){
+                printk(KERN_INFO "BIN FILE could not be created");
+        }
         return 0;
 }
 
@@ -56,6 +90,7 @@ static int pru_speak_remove(struct platform_device *pdev)
         struct device *dev = &pdev->dev;
         printk(KERN_INFO "pru_speak removed\n");
         device_remove_file(dev, &dev_attr_pru_speak_sysfs);
+	sysfs_remove_bin_file( (&dev->kobj), &pru_speak_bin_attr);
         return 0;
 }
 
