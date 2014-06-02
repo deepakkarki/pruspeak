@@ -249,7 +249,7 @@
 					pdbg  = <0x22400>;
 
 					firmware-elf;
-					firmware = "testpru0";
+					firmware = "pru_firmware";
 
 					/* sysevents signaling ring activity (host, pru)*/
 					vring-sysev = <24 25>;
