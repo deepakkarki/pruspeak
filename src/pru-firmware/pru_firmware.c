@@ -13,17 +13,17 @@ void wait(int time)
 
 int main()
 {
-	__R30 = 0xFFFFFFFF; //set all pins to high
+	__R30 = 0x0000FFFF; //set all pins to high
 
 	for (;;)
 	{        
 		wait(0x0AFFFFFF);
 
-		__R30 = 0x00; //set all to low
+		__R30 = 0x00000000; //set all to low
 		
 		wait(0x0AFFFFFF);
 
-		__R30 = 0xFFFFFFFF; //set all to high
+		__R30 = 0x0000FFFF; //set all to high
 
 	}
 }
