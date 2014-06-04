@@ -767,6 +767,8 @@ pruproc_elf_load_segments(struct rproc *rproc, const struct firmware *fw)
 		}
 
 		/* we can't use rproc_da_to_va (it relies on carveouts) */
+		if (filesz == 0)
+			continue;
 
 		/* text? to code area */
 		if (flags & PF_X)
@@ -1420,11 +1422,39 @@ static ssize_t pruproc_store_downcall1(struct device *dev,
 	return pruproc_store_downcall(1, dev, attr, buf, count);
 }
 
+
+
+static ssize_t pru_speak_write(int idx, struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct pruproc *pp = platform_get_drvdata(pdev);
+	int ret;
+	
+	if (count ==  0)
+		return -1;
+	if (buf[0] == '0')
+		ret = pru_downcall_idx(pp, idx, 0, 0, 0, 0, 0, 0);
+	else
+		ret = pru_downcall_idx(pp, idx, 1, 0, 0, 0, 0, 0);
+
+	printk( KERN_INFO "write to pru_speak_write\n");
+	return strlen(buf);
+}
+
+
+static ssize_t pru_speak_write0(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	return pru_speak_write(0, dev, attr, buf, count);
+}
+
 static DEVICE_ATTR(load, S_IWUSR, NULL, pruproc_store_load);
 static DEVICE_ATTR(reset, S_IWUSR, NULL, pruproc_store_reset);
 
 static DEVICE_ATTR(downcall0, S_IWUSR, NULL, pruproc_store_downcall0);
 static DEVICE_ATTR(downcall1, S_IWUSR, NULL, pruproc_store_downcall1);
+
+static DEVICE_ATTR(pru_speak_control, S_IWUSR, NULL, pru_speak_write0);
+
 
 static ssize_t bin_file_read(struct file * f, struct kobject *kobj, struct bin_attribute *attr, char *buffer, loff_t pos, size_t size)
 {
@@ -1459,6 +1489,7 @@ static int pruproc_remove(struct platform_device *pdev)
 
 	device_remove_file(dev, &dev_attr_reset);
 	device_remove_file(dev, &dev_attr_load);
+	device_remove_file(dev, &dev_attr_pru_speak_control);
 	sysfs_remove_bin_file( (&dev->kobj), &pru_speak_bin_attr);
 	
 	/* Unregister as remoteproc device */
@@ -1578,7 +1609,9 @@ static int pru_handle_syscall(struct pruproc_core *ppc)
 	arg1 = pru_read_cpu_reg(ppc, 16);
 	arg2 = pru_read_cpu_reg(ppc, 17);
 	ret  = 0;	/* by default we return 0 */
-
+	
+	printk(KERN_INFO "pru_handle_syscall - entering switch. value scno (r14) : %d\n", scno);
+	
 	switch (scno) {
 		case PRU_SC_HALT:
 			dev_info(dev, "P%d HALT\n",
@@ -1663,9 +1696,13 @@ static int pru_handle_syscall(struct pruproc_core *ppc)
 
 		case PRU_SC_DOWNCALL_READY:
 			/* if we were waiting for it, wake up */
+
+			printk(KERN_INFO "#1 Function pru_handle_syscall - pru idx:%d, dc_flags : %lu\n", ppc->idx, ppc->dc_flags);
+
 			if (test_and_clear_bit(PRU_DCF_DOWNCALL_REQ, &ppc->dc_flags)) {
 				set_bit(PRU_DCF_DOWNCALL_ACK, &ppc->dc_flags);
 				wake_up_interruptible(&ppc->dc_waitq);
+				printk(KERN_INFO "#1.5 Function pru_handle_syscall, dc_flags : %lu\n", ppc->dc_flags);
 				return 1;
 			}
 			dev_err(dev, "P%d No-one expected downcall; halting\n",
@@ -1674,9 +1711,13 @@ static int pru_handle_syscall(struct pruproc_core *ppc)
 
 		case PRU_SC_DOWNCALL_DONE:
 			/* if we were waiting for it, wake up */
+
+                        printk(KERN_INFO "#2 Function pru_handle_syscall - pru idx:%d, dc_flags : %lu\n", ppc->idx, ppc->dc_flags);
+
 			if (test_and_clear_bit(PRU_DCF_DOWNCALL_ISSUE, &ppc->dc_flags)) {
 				set_bit(PRU_DCF_DOWNCALL_DONE, &ppc->dc_flags);
 				wake_up_interruptible(&ppc->dc_waitq);
+				printk(KERN_INFO "#2.5 Function pru_handle_syscall, dc_flags : %lu\n", ppc->dc_flags);
 				return 1;
 			}
 			dev_err(dev, "P%d No-one expected downcall; halting\n",
@@ -1742,6 +1783,8 @@ static int pru_downcall(struct pruproc_core *ppc,
 		ret = -EBUSY;
 		goto ret_unlock;
 	}
+	
+	printk(KERN_INFO "#1 Function pru_downcall - pru idx:%d, sysevent : %d, dc_flags : %lu\n", ppc->idx, sysint, ppc->dc_flags);
 
 	if (test_and_set_bit(PRU_DCF_DOWNCALL_REQ, &ppc->dc_flags) != 0) {
 		dev_err(dev, "PRU#%d downcall failed due to mangled req bit\n",
@@ -1749,7 +1792,9 @@ static int pru_downcall(struct pruproc_core *ppc,
 		ret = -EBUSY;
 		goto ret_unlock;
 	}
-
+	
+	printk(KERN_INFO "#2 Function pru_downcall - pru idx:%d, sysevent : %d, dc_flags : %lu\n", ppc->idx, sysint, ppc->dc_flags);
+	
 	/* signal downcall event */
 	if (sysint < 32)
 		pintc_write_reg(pp, PINTC_SRSR0, 1 << sysint);
@@ -1774,6 +1819,8 @@ static int pru_downcall(struct pruproc_core *ppc,
 	}
 	dev_dbg(dev, "PRU#%d got downcall ready\n", ppc->idx);
 
+	printk(KERN_INFO "#3 Function pru_downcall - Got downcall ready, dc_flags : %lu\n", ppc->dc_flags);
+
 	ret = pru_is_halted(ppc, &addr);
 	if (ret != 0) {
 		dev_err(dev, "PRU#%d not halted\n",
@@ -1783,7 +1830,8 @@ static int pru_downcall(struct pruproc_core *ppc,
 	}
 
 	/* get the actual return address */
-	r3in = pru_read_cpu_reg(ppc, 3) << 2;
+	//r3in = pru_read_cpu_reg(ppc, 3) << 2;
+	r3in = (pru_read_cpu_reg(ppc, 3) >> 16) << 2;
 
 	/* write the arguments */
 	pru_write_cpu_reg(ppc, 14, nr);
@@ -1798,6 +1846,8 @@ static int pru_downcall(struct pruproc_core *ppc,
 	/* skip over the HALT insn */
 	pru_resume(ppc, addr + 4);
 
+	printk(KERN_INFO "#4 Function pru_downcall - set up args done, dc_flags : %lu\n",  ppc->dc_flags);
+	
 	/* now waiting until we get the downcall ready (maximum 100ms) */
 	intr = wait_event_interruptible_timeout(ppc->dc_waitq,
 		test_and_clear_bit(PRU_DCF_DOWNCALL_DONE, &ppc->dc_flags),
@@ -1816,8 +1866,12 @@ static int pru_downcall(struct pruproc_core *ppc,
 	}
 	dev_dbg(dev, "PRU#%d got downcall done\n", ppc->idx);
 
+	printk(KERN_INFO "#4 Function pru_downcall - downcall done. reading return value, dc_flags : %lu\n",  ppc->dc_flags);
+	
 	/* return */
 	ret = pru_read_cpu_reg(ppc, 0);
+	
+	printk(KERN_INFO "RETURN value of pru_downcall : %d\n", ret);
 
 	/* and we're done */
 	pru_resume(ppc, r3in);
@@ -2899,6 +2953,12 @@ static int pruproc_probe(struct platform_device *pdev)
 	}
 
 	err = device_create_file(dev, &dev_attr_downcall1);
+	if (err != 0) {
+		dev_err(dev, "device_create_file failed\n");
+		goto err_fail;
+	}
+	
+	err = device_create_file(dev, &dev_attr_pru_speak_control);
 	if (err != 0) {
 		dev_err(dev, "device_create_file failed\n");
 		goto err_fail;
