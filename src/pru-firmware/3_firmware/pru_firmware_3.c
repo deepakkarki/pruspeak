@@ -16,6 +16,14 @@ __far volatile char C0[0x300] __attribute__((cregister("C0", far)));
 
 #define INCOMING		1 << 21
 
+__far volatile char C4[0x100] __attribute__((cregister("C4", near)));	/* PRUCFG */
+
+#define PRUCFG(_reg) \
+	(*(volatile u32 *)((char *)&C4 + (_reg)))
+
+#define PRUCFG_SYSCFG		PRUCFG(0x0004)
+#define  SYSCFG_STANDBY_INIT	(1 << 4)
+
 extern void sc_downcall(int (*handler)(u32 nr, u32 arg0, u32 arg1, u32 arg2, u32 arg3, u32 arg4));
 
 
@@ -25,11 +33,18 @@ static int handle_downcall(u32 id, u32 arg0, u32 arg1, u32 arg2,
 	if(id == 0){
 		__R30 = 0x00000000;
 	}
-	
-	else{
+	else if (id == 1){	
 		__R30 = 0x0000FFFF;
 	}
+	else if (id == 2){
+		//__R30 = 0x0000FFFF;
+		PRUCFG_SYSCFG = PRUCFG_SYSCFG & (~SYSCFG_STANDBY_INIT);
+		u32 *base = (u32 *)arg0;
+		int val = *base;
+		*base = 24;
+		__R30 = 0x0000FFFF;
 	
+	}
 	return 123;
 }
 

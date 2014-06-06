@@ -1,7 +1,7 @@
 	.text
 	.global sc_downcall
 sc_downcall:
-	MOV R0.w0, R14.w0		;* save the pointer to the function
+	MOV R0.w0, R14.w0		;* save the pointer to the handler function
 	;* first issue the downcall ready
 	LDI R14, 254			;* DOWNCALL_READY
 	LDI R31, 35			;* SYSCALL_VALUE

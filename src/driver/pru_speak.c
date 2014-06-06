@@ -41,6 +41,23 @@
 #include <linux/irqreturn.h>
 #include <linux/firmware.h>
 
+/**
+ * struct pru_shm - shared memory details per PRU
+ * @idx: ID of the PRU this pru_shm structure represents. [PRU0 or PRU1]
+ * @vaddr : virtual address of the shared memory, for access from kernel
+ * @paddr : physical address of the shared memory, for access from PRU
+ * @is_valid : this is = 1 if this structure represents a valid shared memory segment
+ */
+
+struct pru_shm {
+	int idx;
+	void __iomem *vaddr;
+	void __iomem *paddr;
+	unsigned int is_valid :1;
+};
+
+static struct pru_shm shm;
+
 struct rproc;
 
 /**
@@ -1447,6 +1464,25 @@ static ssize_t pru_speak_write0(struct device *dev, struct device_attribute *att
 	return pru_speak_write(0, dev, attr, buf, count);
 }
 
+static ssize_t pru_speak_shm_init(int idx, struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+        struct pruproc *pp = platform_get_drvdata(pdev);
+        int ret;
+
+        if (count ==  0)
+                return -1;
+	printk("physical addr : %x\n", (int)shm.paddr);
+        ret = pru_downcall_idx(pp, idx, 2, (int)shm.paddr, 10, 0, 0, 0); //pp, idx, type of sys call, base addr, val, junk,.,.
+        printk( KERN_INFO "write to pru_speak_shm_init, pram value : 10, return value : %d, modified value : %d\n", ret, *((int *)shm.vaddr));
+        return strlen(buf);
+}
+static ssize_t pru_speak_shm_init0(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+        return pru_speak_shm_init(0, dev, attr, buf, count);
+}
+
+
 static DEVICE_ATTR(load, S_IWUSR, NULL, pruproc_store_load);
 static DEVICE_ATTR(reset, S_IWUSR, NULL, pruproc_store_reset);
 
@@ -1454,7 +1490,7 @@ static DEVICE_ATTR(downcall0, S_IWUSR, NULL, pruproc_store_downcall0);
 static DEVICE_ATTR(downcall1, S_IWUSR, NULL, pruproc_store_downcall1);
 
 static DEVICE_ATTR(pru_speak_control, S_IWUSR, NULL, pru_speak_write0);
-
+static DEVICE_ATTR(pru_speak_shm, S_IWUSR, NULL, pru_speak_shm_init0);
 
 static ssize_t bin_file_read(struct file * f, struct kobject *kobj, struct bin_attribute *attr, char *buffer, loff_t pos, size_t size)
 {
@@ -1490,7 +1526,9 @@ static int pruproc_remove(struct platform_device *pdev)
 	device_remove_file(dev, &dev_attr_reset);
 	device_remove_file(dev, &dev_attr_load);
 	device_remove_file(dev, &dev_attr_pru_speak_control);
+	device_remove_file(dev, &dev_attr_pru_speak_shm);
 	sysfs_remove_bin_file( (&dev->kobj), &pru_speak_bin_attr);
+	
 	
 	/* Unregister as remoteproc device */
 	for (i = pp->num_prus - 1; i >= 0; i--) {
@@ -1501,6 +1539,10 @@ static int pruproc_remove(struct platform_device *pdev)
 		if (ppc->dev_table_va != NULL)
 			dma_free_coherent(dev, PAGE_ALIGN(ppc->table_size),
 					ppc->dev_table_va, ppc->dev_table_pa);
+
+		if( (ppc->idx == shm.idx) && (shm.is_valid == 1) )
+	                dma_free_coherent(dev, PAGE_SIZE, shm.vaddr, (dma_addr_t)shm.paddr);
+
 	}
 
 	platform_set_drvdata(pdev, NULL);
@@ -2964,6 +3006,12 @@ static int pruproc_probe(struct platform_device *pdev)
 		goto err_fail;
 	}
 	
+	err = device_create_file(dev, &dev_attr_pru_speak_shm);
+        if (err != 0) {
+                dev_err(dev, "device_create_file failed\n");
+                goto err_fail;
+        }
+	
 	err = sysfs_create_bin_file(&(dev->kobj), &pru_speak_bin_attr);
 	if (err != 0){
                 printk(KERN_INFO "BIN FILE could not be created");
@@ -2981,6 +3029,14 @@ static int pruproc_probe(struct platform_device *pdev)
 	(void)pru_i_write_u32;
 	(void)pru_d_write_u32;
 	
+	shm.idx = 0; /* as of now only for PRU0 */
+	shm.is_valid = 1;
+	shm.vaddr = dma_zalloc_coherent(dev, PAGE_SIZE, (dma_addr_t *)&shm.paddr, GFP_DMA);
+	if(!shm.vaddr){
+		shm.is_valid = 0;
+		printk("shm init failed\n");
+	}
+
 	printk("Probe successful\n");
 	
 	return 0;
