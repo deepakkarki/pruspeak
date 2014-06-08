@@ -1492,22 +1492,55 @@ static DEVICE_ATTR(downcall1, S_IWUSR, NULL, pruproc_store_downcall1);
 static DEVICE_ATTR(pru_speak_control, S_IWUSR, NULL, pru_speak_write0);
 static DEVICE_ATTR(pru_speak_shm, S_IWUSR, NULL, pru_speak_shm_init0);
 
+/*
+ *
+ *	BIN FILE SYSFS - for mmap'ing. share mem b/w userspace, kernel and PRU
+ *
+ */
+
+void pru_vma_open(struct vm_area_struct *vma)
+{
+	printk(KERN_NOTICE "PRU Speak VMA open, virt %lx, phys %lx\n",
+            vma->vm_start, vma->vm_pgoff);
+}
+
+void pru_vma_close(struct vm_area_struct *vma)
+{
+	printk(KERN_NOTICE "PRU Speak VMA close.\n");
+}
+
+static struct vm_operations_struct pru_remap_vm_ops = {
+	.open =  pru_vma_open,
+	.close = pru_vma_close,
+};
+
 static ssize_t bin_file_read(struct file * f, struct kobject *kobj, struct bin_attribute *attr, char *buffer, loff_t pos, size_t size)
 {
-        printk(KERN_INFO "READ called on BIN FILE\n");
-        return (ssize_t)0;
+	printk(KERN_INFO "READ called on BIN FILE\n");
+	return (ssize_t)0;
 }
 
 static ssize_t bin_file_write(struct file *f, struct kobject *kobj, struct bin_attribute *attr, char *buffer, loff_t pos, size_t size)
 {
-        printk(KERN_INFO "WRITE called on BIN FILE\n");
-        return size;
+	printk(KERN_INFO "WRITE called on BIN FILE\n");
+	return size;
 }
 
 static int bin_file_mmap(struct file *f, struct kobject *kobj, struct bin_attribute *attr,  struct vm_area_struct *vma)
 {
-        printk(KERN_INFO "MMAP called on BIN FILE\n");
-        return 0;
+	//printk(KERN_INFO "MMAP called on BIN FILE, PAGE_SHIFT value : %d\n", PAGE_SHIFT);
+	if (remap_pfn_range(vma, vma->vm_start, (unsigned long)((int)shm.paddr >> PAGE_SHIFT), vma->vm_end - vma->vm_start, vma->vm_page_prot))
+	{
+		printk("MMAP failed\n");
+		return -EAGAIN;
+	}
+
+	vma->vm_ops = &pru_remap_vm_ops;
+	pru_vma_open(vma);
+
+	printk("physical address that was to be maped %x : \n", (int)shm.paddr);
+	printk("MMAP successful\n");
+	return 0;
 }
 
 static struct bin_attribute pru_speak_bin_attr = BIN_ATTR(pru_speak_binfile, S_IWUSR | S_IRUGO, PAGE_SIZE, bin_file_read, bin_file_write, bin_file_mmap);
@@ -3037,7 +3070,7 @@ static int pruproc_probe(struct platform_device *pdev)
 		printk("shm init failed\n");
 	}
 
-	printk("Probe successful\n");
+	printk("Probe successful, physical address of shm : %d\n", (int)shm.paddr);
 	
 	return 0;
 err_fail:
