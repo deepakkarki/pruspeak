@@ -1410,6 +1410,8 @@ static int pru_downcall(struct pruproc_core *ppc,
 static int pru_downcall_idx(struct pruproc *pp, int idx,
 		u32 nr, u32 arg0, u32 arg1, u32 arg2, u32 arg3, u32 arg4);
 
+/*
+
 static ssize_t pruproc_store_downcall(int idx,
 		struct device *dev, struct device_attribute *attr,
 		const char *buf, size_t count)
@@ -1439,9 +1441,12 @@ static ssize_t pruproc_store_downcall1(struct device *dev,
 	return pruproc_store_downcall(1, dev, attr, buf, count);
 }
 
+*/
 
-
-static ssize_t pru_speak_write(int idx, struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+/*
+ *	syscall ID #0
+ */
+static ssize_t pru_speak_debug(int idx, struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct pruproc *pp = platform_get_drvdata(pdev);
@@ -1450,54 +1455,53 @@ static ssize_t pru_speak_write(int idx, struct device *dev, struct device_attrib
 	if (count ==  0)
 		return -1;
 	if (buf[0] == '0')
-		ret = pru_downcall_idx(pp, idx, 0, 0, 0, 0, 0, 0);
+		ret = pru_downcall_idx(pp, idx, 0, 0, 0, 0, 0, 0);/*pp, idx, syscall_id, 5 args*/
 	else
-		ret = pru_downcall_idx(pp, idx, 1, 0, 0, 0, 0, 0);
+		ret = pru_downcall_idx(pp, idx, 0, 1, 0, 0, 0, 0);
 
 	printk( KERN_INFO "write to pru_speak_write\n");
 	return strlen(buf);
 }
 
 
-static ssize_t pru_speak_write0(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t pru_speak_debug0(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
-	return pru_speak_write(0, dev, attr, buf, count);
+	return pru_speak_debug(0, dev, attr, buf, count);
 }
 
-static ssize_t pru_speak_shm_init(int idx, struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t pru_speak_shm_init(int idx, struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct platform_device *pdev = to_platform_device(dev);
         struct pruproc *pp = platform_get_drvdata(pdev);
         int ret;
 
-        if (count ==  0)
-                return -1;
 	printk("physical addr : %x\n", (int)shm.paddr);
-        ret = pru_downcall_idx(pp, idx, 2, (int)shm.paddr, 10, 0, 0, 0); //pp, idx, type of sys call, base addr, val, junk,.,.
-        printk( KERN_INFO "write to pru_speak_shm_init, pram value : 10, return value : %d, modified value : %d\n", ret, *((int *)shm.vaddr));
-        return strlen(buf);
+        ret = pru_downcall_idx(pp, idx, 1, (int)shm.paddr, 10, 0, 0, 0); //pp, idx, sys call id, base addr, val, junk,.,.
+        printk( KERN_INFO "pru_speak_init, pram value : 10, return value : %d, modified value : %d\n", ret, *((int *)shm.vaddr));
+	
+	return scnprintf(buf, PAGE_SIZE, "%x", (int)shm.paddr);
 }
-static ssize_t pru_speak_shm_init0(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t pru_speak_shm_init0(struct device *dev, struct device_attribute *attr, char *buf)
 {
-        return pru_speak_shm_init(0, dev, attr, buf, count);
+        return pru_speak_shm_init(0, dev, attr, buf);
 }
 
 
 static DEVICE_ATTR(load, S_IWUSR, NULL, pruproc_store_load);
 static DEVICE_ATTR(reset, S_IWUSR, NULL, pruproc_store_reset);
-
+/*
 static DEVICE_ATTR(downcall0, S_IWUSR, NULL, pruproc_store_downcall0);
 static DEVICE_ATTR(downcall1, S_IWUSR, NULL, pruproc_store_downcall1);
-
-static DEVICE_ATTR(pru_speak_control, S_IWUSR, NULL, pru_speak_write0);
-static DEVICE_ATTR(pru_speak_shm, S_IWUSR, NULL, pru_speak_shm_init0);
+*/
+static DEVICE_ATTR(pru_speak_debug, S_IWUSR, NULL, pru_speak_debug0);
+static DEVICE_ATTR(pru_speak_shm_init, S_IWUSR | S_IRUGO, pru_speak_shm_init0, NULL);
 
 /*
  *
  *	BIN FILE SYSFS - for mmap'ing. share mem b/w userspace, kernel and PRU
  *
  */
-
+/* Will develop this later
 void pru_vma_open(struct vm_area_struct *vma)
 {
 	printk(KERN_NOTICE "PRU Speak VMA open, virt %lx, phys %lx\n",
@@ -1544,7 +1548,7 @@ static int bin_file_mmap(struct file *f, struct kobject *kobj, struct bin_attrib
 }
 
 static struct bin_attribute pru_speak_bin_attr = BIN_ATTR(pru_speak_binfile, S_IWUSR | S_IRUGO, PAGE_SIZE, bin_file_read, bin_file_write, bin_file_mmap);
-
+*/
 
 /* PRU is unregistered */
 static int pruproc_remove(struct platform_device *pdev)
@@ -1558,9 +1562,9 @@ static int pruproc_remove(struct platform_device *pdev)
 
 	device_remove_file(dev, &dev_attr_reset);
 	device_remove_file(dev, &dev_attr_load);
-	device_remove_file(dev, &dev_attr_pru_speak_control);
-	device_remove_file(dev, &dev_attr_pru_speak_shm);
-	sysfs_remove_bin_file( (&dev->kobj), &pru_speak_bin_attr);
+	device_remove_file(dev, &dev_attr_pru_speak_debug);
+	device_remove_file(dev, &dev_attr_pru_speak_shm_init);
+	//sysfs_remove_bin_file( (&dev->kobj), &pru_speak_bin_attr);
 	
 	
 	/* Unregister as remoteproc device */
@@ -3020,7 +3024,7 @@ static int pruproc_probe(struct platform_device *pdev)
 		dev_err(dev, "device_create_file failed\n");
 		goto err_fail;
 	}
-
+/*
 	err = device_create_file(dev, &dev_attr_downcall0);
 	if (err != 0) {
 		dev_err(dev, "device_create_file failed\n");
@@ -3032,19 +3036,19 @@ static int pruproc_probe(struct platform_device *pdev)
 		dev_err(dev, "device_create_file failed\n");
 		goto err_fail;
 	}
-	
-	err = device_create_file(dev, &dev_attr_pru_speak_control);
+*/	
+	err = device_create_file(dev, &dev_attr_pru_speak_debug);
 	if (err != 0) {
 		dev_err(dev, "device_create_file failed\n");
 		goto err_fail;
 	}
 	
-	err = device_create_file(dev, &dev_attr_pru_speak_shm);
+	err = device_create_file(dev, &dev_attr_pru_speak_shm_init);
         if (err != 0) {
                 dev_err(dev, "device_create_file failed\n");
                 goto err_fail;
         }
-	
+/*
 	err = sysfs_create_bin_file(&(dev->kobj), &pru_speak_bin_attr);
 	if (err != 0){
                 printk(KERN_INFO "BIN FILE could not be created");
@@ -3053,6 +3057,7 @@ static int pruproc_probe(struct platform_device *pdev)
 	else{
 		printk(KERN_INFO "PRU SPEAK bin attribute created\n");
 	}
+*/
 	dev_info(dev, "Loaded OK\n");
 
 	/* creating devices */
