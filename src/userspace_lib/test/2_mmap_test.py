@@ -23,6 +23,7 @@ with open("/dev/mem", "r+b" ) as f:
 	WAIT = 0x02000000 #WAIT 1
 	DIO0 = 0x01000000  #DIO[0] = 0
 	JUMP = 0x03000000 #JUMP to DIO1
+	#['0x1000080', '0x2000001', '0x1000000', '0x2000001', '0x3000000']
 
 	mem[0:4] = struct.pack("<L", DIO1)
 	mem[4:8] = struct.pack("<L", WAIT)
