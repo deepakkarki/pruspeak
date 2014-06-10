@@ -1444,7 +1444,9 @@ static ssize_t pruproc_store_downcall1(struct device *dev,
 */
 
 /*
- *	syscall ID #0
+ * syscall #0 - useful while developing driver
+ * 		writing 1 => all output pins in PRU control set high
+ *		writing 0 => all output pins in PRU control set low
  */
 static ssize_t pru_speak_debug(int idx, struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
@@ -1459,15 +1461,20 @@ static ssize_t pru_speak_debug(int idx, struct device *dev, struct device_attrib
 	else
 		ret = pru_downcall_idx(pp, idx, 0, 1, 0, 0, 0, 0);
 
-	printk( KERN_INFO "write to pru_speak_write\n");
+	printk( KERN_INFO "write to pru_speak_debug\n");
 	return strlen(buf);
 }
-
 
 static ssize_t pru_speak_debug0(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	return pru_speak_debug(0, dev, attr, buf, count);
 }
+
+/*
+ * syscall #1 - used to initialize the shm info for both PRU and ARM
+ * 		*reading* this file will give back hex value of physical address as a string
+ *		at the same time PRU is also informed of the address via a downcall
+ */
 
 static ssize_t pru_speak_shm_init(int idx, struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -1486,6 +1493,37 @@ static ssize_t pru_speak_shm_init0(struct device *dev, struct device_attribute *
         return pru_speak_shm_init(0, dev, attr, buf);
 }
 
+/*
+ * syscall #2 - ask PRU to start execution.
+ *		writing 1 => start/continue execution
+ *		writing 0 => pause execution
+ *
+ * NOTE : pru_shm_init must be triggered before this. otherwise hell will chase you.
+ */
+
+static ssize_t pru_speak_execute(int idx, struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+        struct platform_device *pdev = to_platform_device(dev);
+        struct pruproc *pp = platform_get_drvdata(pdev);
+        int ret;
+	
+	if (count ==  0)
+                return -1;
+        if (buf[0] == '0')
+                ret = pru_downcall_idx(pp, idx, 2, 0, 0, 0, 0, 0);/*pp, idx, syscall_id, 5 args*/
+        else
+                ret = pru_downcall_idx(pp, idx, 2, 1, 0, 0, 0, 0);
+
+        printk( KERN_INFO "write to pru_speak_execute\n");
+        return strlen(buf);
+
+}
+
+static ssize_t pru_speak_execute0(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+        return pru_speak_execute(0, dev, attr, buf, count);
+}
+
 
 static DEVICE_ATTR(load, S_IWUSR, NULL, pruproc_store_load);
 static DEVICE_ATTR(reset, S_IWUSR, NULL, pruproc_store_reset);
@@ -1495,6 +1533,7 @@ static DEVICE_ATTR(downcall1, S_IWUSR, NULL, pruproc_store_downcall1);
 */
 static DEVICE_ATTR(pru_speak_debug, S_IWUSR, NULL, pru_speak_debug0);
 static DEVICE_ATTR(pru_speak_shm_init, S_IWUSR | S_IRUGO, pru_speak_shm_init0, NULL);
+static DEVICE_ATTR(pru_speak_execute, S_IWUSR, NULL, pru_speak_execute0);
 
 /*
  *
@@ -1564,6 +1603,7 @@ static int pruproc_remove(struct platform_device *pdev)
 	device_remove_file(dev, &dev_attr_load);
 	device_remove_file(dev, &dev_attr_pru_speak_debug);
 	device_remove_file(dev, &dev_attr_pru_speak_shm_init);
+	device_remove_file(dev, &dev_attr_pru_speak_execute);
 	//sysfs_remove_bin_file( (&dev->kobj), &pru_speak_bin_attr);
 	
 	
@@ -3048,6 +3088,13 @@ static int pruproc_probe(struct platform_device *pdev)
                 dev_err(dev, "device_create_file failed\n");
                 goto err_fail;
         }
+
+	err = device_create_file(dev, &dev_attr_pru_speak_execute);
+        if (err != 0) {
+                dev_err(dev, "device_create_file failed\n");
+                goto err_fail;
+        }
+
 /*
 	err = sysfs_create_bin_file(&(dev->kobj), &pru_speak_bin_attr);
 	if (err != 0){
