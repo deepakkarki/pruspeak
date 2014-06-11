@@ -53,10 +53,11 @@ struct pru_shm {
 	int idx;
 	void __iomem *vaddr;
 	void __iomem *paddr;
+	int size_in_pages;
 	unsigned int is_valid :1;
 };
 
-static struct pru_shm shm;
+//static struct pru_shm shm;
 
 struct rproc;
 
@@ -195,7 +196,12 @@ struct pruproc_core;
 /* maximum PWMs */
 #define PRU_PWM_MAX	32
 
+/* maximum shared memory segments per PRU */
+#define MAX_SHARED	4
+#define MIN_SHARED	2
 
+#define BS_CODE		0
+/* returns the initialized bin_attr struct for sysfs */
 #define BIN_ATTR(_name,_mode,_size,_read,_write,_mmap) { \
        .attr = { .name  =  __stringify(_name),  .mode = _mode  },   \
        .size = _size,                                         \
@@ -258,6 +264,10 @@ struct pruproc_core {
 	struct mutex dc_lock;
 	wait_queue_head_t dc_waitq;
 	unsigned long dc_flags;
+	
+	/* shared memory details */
+	struct pru_shm shm[MAX_SHARED];	// should I have one struct or array of these structs
+
 #define PRU_DCF_DOWNCALL_REQ	0
 #define PRU_DCF_DOWNCALL_ACK	1
 #define PRU_DCF_DOWNCALL_ISSUE	2
@@ -1482,7 +1492,11 @@ static ssize_t pru_speak_shm_init(int idx, struct device *dev, struct device_att
         struct pruproc *pp = platform_get_drvdata(pdev);
         int ret;
 
-	printk("physical addr : %x\n", (int)shm.paddr);
+	//struct pru_shm shm = pp->ppc->shm[BS_CODE];
+	struct pru_shm shm = pp->pru_to_pruc[idx]->shm[BS_CODE];
+
+	printk("physical addr : %x\n", (unsigned int)shm.paddr);
+
         ret = pru_downcall_idx(pp, idx, 1, (int)shm.paddr, 10, 0, 0, 0); //pp, idx, sys call id, base addr, val, junk,.,.
         printk( KERN_INFO "pru_speak_init, pram value : 10, return value : %d, modified value : %d\n", ret, *((int *)shm.vaddr));
 	
@@ -1617,8 +1631,13 @@ static int pruproc_remove(struct platform_device *pdev)
 			dma_free_coherent(dev, PAGE_ALIGN(ppc->table_size),
 					ppc->dev_table_va, ppc->dev_table_pa);
 
-		if( (ppc->idx == shm.idx) && (shm.is_valid == 1) )
-	                dma_free_coherent(dev, PAGE_SIZE, shm.vaddr, (dma_addr_t)shm.paddr);
+		//if( (ppc->idx == shm.idx) && (shm.is_valid == 1) )
+	          //      dma_free_coherent(dev, PAGE_SIZE, shm.vaddr, (dma_addr_t)shm.paddr);
+		for (i=0; i < MAX_SHARED; i++){
+			if(ppc->shm[i].is_valid)
+				dma_free_coherent(dev, ppc->shm[i].size_in_pages * PAGE_SIZE,ppc->shm[i].vaddr, 
+											(dma_addr_t)ppc->shm[i].paddr);
+		}
 
 	}
 
@@ -2654,9 +2673,10 @@ static int pruproc_probe(struct platform_device *pdev)
 	struct rproc *rproc = NULL;
 	struct resource *res;
 	struct pinctrl *pinctrl;
-	int err, i, j, irq, sysev;
+	int err, i, j, irq, sysev, x;
 	u32 tmparr[4], pru_idx, val;
 	u32 tmpev[MAX_ARM_PRU_INTS];
+	int shm_count = 0;
 
 	/* get pinctrl */
 	pinctrl = devm_pinctrl_get_select_default(dev);
@@ -2942,6 +2962,49 @@ static int pruproc_probe(struct platform_device *pdev)
 		else
 			rproc->fw_ops = &pruproc_elf_fw_ops;
 
+		/* PRU Speak shared memory stuff */
+		
+		printk("Entering SHM section\n");
+		err = of_property_read_u32(pnode, "shm-count", &shm_count);
+		
+		if (err != 0) {
+			dev_err(dev, "can't find property %s\n", "shm-count");
+			of_node_put(pnode);
+			goto err_fail;
+		}		
+
+		/* make sure the count is within limits expected */
+		if ((shm_count < MIN_SHARED) || (shm_count > MAX_SHARED)){
+			dev_err(dev, "expected device count min : %d, max : %d\n", MIN_SHARED, MAX_SHARED);
+			of_node_put(pnode);
+			goto err_fail;
+		}
+
+		err = of_property_read_u32_array(pnode, "shm-size", tmparr, shm_count);
+		if (err != 0) {
+			dev_err(dev, "no shm-size property\n");
+			goto err_fail;
+		}
+		printk("Starting to initialize SHMs\n");
+		/* assign idx, shared memory size for each segment for this pru */
+		for(x=0; x < shm_count; x++){
+			ppc->shm[x].size_in_pages = tmparr[x];
+			ppc->shm[x].idx = pru_idx;
+
+			/* mark valid each shm segment, allocate space for it*/
+			printk("Initializing shm #%d for PRU%d \n", x, pru_idx);
+			ppc->shm[x].is_valid = 1;
+			ppc->shm[x].vaddr = dma_zalloc_coherent(dev, ppc->shm[x].size_in_pages * PAGE_SIZE, 
+									(dma_addr_t *) &(ppc->shm[x].paddr), GFP_DMA);
+
+			if(!(ppc->shm[x].vaddr)){
+				ppc->shm[x].is_valid = 0;
+				printk("shm init failed\n");
+			}
+		}
+		
+		printk("SHM initalization sequence is now complete\n");
+		/* important */
 		pp->pruc[i] = ppc;
 		pp->pru_to_pruc[pru_idx] = ppc;
 		i++;
@@ -2949,6 +3012,7 @@ static int pruproc_probe(struct platform_device *pdev)
 	pnode = NULL;
 
 	/* clean up the sysev to target map */
+	printk("clean up the sysev to target map\n");
 	memset(pp->sysev_to_target, 0, sizeof(pp->sysev_to_target));
 	for (i = 0; i < ARRAY_SIZE(pp->sysev_to_target); i++) {
 		pst = &pp->sysev_to_target[i];
@@ -2957,6 +3021,7 @@ static int pruproc_probe(struct platform_device *pdev)
 	}
 
 	/* fill in the sysev target map for std. signaling */
+	printk("fill in the sysev target map for std. signaling\n");
 	for (i = 0; i < MAX_TARGETS; i++) {
 		for (j = 0; j < MAX_TARGETS; j++) {
 			/* target self? don't care*/
@@ -2980,10 +3045,10 @@ static int pruproc_probe(struct platform_device *pdev)
 	}
 
 	/* fill in the sysev target map from vring info */
+	printk("fill in the sysev target map from vring info\n");
 	for (i = 0; i < pp->num_prus; i++) {
 		ppc = pp->pruc[i];
 		pru_idx = ppc->idx;
-
 		sysev = ppc->host_vring_sysev;
 		if (sysev != -1) {
 			pst = &pp->sysev_to_target[sysev];
@@ -2996,7 +3061,6 @@ static int pruproc_probe(struct platform_device *pdev)
 			pst->vring = 1;
 			pst->valid = 1;
 		}
-
 		sysev = ppc->pru_vring_sysev;
 		if (sysev != -1) {
 			pst = &pp->sysev_to_target[sysev];
@@ -3012,6 +3076,7 @@ static int pruproc_probe(struct platform_device *pdev)
 	}
 
 	/* dump the sysev target map */
+	printk("dump the sysev target map\n");
 	for (i = 0; i < ARRAY_SIZE(pp->sysev_to_target); i++) {
 		pst = &pp->sysev_to_target[i];
 		if (!pst->valid)
@@ -3021,6 +3086,7 @@ static int pruproc_probe(struct platform_device *pdev)
 	}
 
 	/* register the interrupts */
+	printk("register the interrupts\n");
 	for (i = 0; i < pp->num_irqs; i++) {
 
 		irq = pp->irqs[i];
@@ -3033,6 +3099,8 @@ static int pruproc_probe(struct platform_device *pdev)
 	}
 
 	/* start the remote procs */
+	printk("start the remote procs\n");
+
 	for (i = 0; i < pp->num_prus; i++) {
 		ppc = pp->pruc[i];
 
@@ -3052,7 +3120,9 @@ static int pruproc_probe(struct platform_device *pdev)
 			}
 		}
 	}
-
+	
+	printk("Creating sysfs entries\n");
+	
 	err = device_create_file(dev, &dev_attr_load);
 	if (err != 0) {
 		dev_err(dev, "device_create_file failed\n");
@@ -3083,6 +3153,7 @@ static int pruproc_probe(struct platform_device *pdev)
 		goto err_fail;
 	}
 	
+		
 	err = device_create_file(dev, &dev_attr_pru_speak_shm_init);
         if (err != 0) {
                 dev_err(dev, "device_create_file failed\n");
@@ -3113,16 +3184,8 @@ static int pruproc_probe(struct platform_device *pdev)
 	(void)pru_d_read_u32;
 	(void)pru_i_write_u32;
 	(void)pru_d_write_u32;
-	
-	shm.idx = 0; /* as of now only for PRU0 */
-	shm.is_valid = 1;
-	shm.vaddr = dma_zalloc_coherent(dev, PAGE_SIZE, (dma_addr_t *)&shm.paddr, GFP_DMA);
-	if(!shm.vaddr){
-		shm.is_valid = 0;
-		printk("shm init failed\n");
-	}
 
-	printk("Probe successful, physical address of shm : %d\n", (int)shm.paddr);
+	printk("Probe successful");
 	
 	return 0;
 err_fail:
