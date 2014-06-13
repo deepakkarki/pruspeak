@@ -254,6 +254,12 @@
 					/* sysevents signaling ring activity (host, pru)*/
 					vring-sysev = <24 25>;
 
+					/* shared memory count */
+					shm-count = <2>;
+
+					/* corresponding size of each shm segment - in units of pages*/
+					shm-size = <1 1>;
+			
 					resource_table {
 						resource-table;
 						version = <1>;
