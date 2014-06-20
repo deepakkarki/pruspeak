@@ -1502,6 +1502,7 @@ static ssize_t pru_speak_shm_init(int idx, struct device *dev, struct device_att
 	
 	return scnprintf(buf, PAGE_SIZE, "%x", (int)shm.paddr);
 }
+
 static ssize_t pru_speak_shm_init0(struct device *dev, struct device_attribute *attr, char *buf)
 {
         return pru_speak_shm_init(0, dev, attr, buf);
@@ -1524,7 +1525,7 @@ static ssize_t pru_speak_execute(int idx, struct device *dev, struct device_attr
 	if (count ==  0)
                 return -1;
         if (buf[0] == '0')
-                ret = pru_downcall_idx(pp, idx, 2, 0, 0, 0, 0, 0);/*pp, idx, syscall_id, 5 args*/
+                ret = pru_downcall_idx(pp, idx, 2, 0, 0, 0, 0, 0);/*pp, idx, syscall_id, start/pause, 4 args*/
         else
                 ret = pru_downcall_idx(pp, idx, 2, 1, 0, 0, 0, 0);
 
@@ -1538,6 +1539,52 @@ static ssize_t pru_speak_execute0(struct device *dev, struct device_attribute *a
         return pru_speak_execute(0, dev, attr, buf, count);
 }
 
+/*
+ * syscall #3 - ask pru to abort currently executing BS script
+ *		triggered by write to this file
+ */
+
+static ssize_t pru_speak_abort(int idx, struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+        struct platform_device *pdev = to_platform_device(dev);
+        struct pruproc *pp = platform_get_drvdata(pdev);
+        int ret;
+
+        ret = pru_downcall_idx(pp, idx, 3, 0, 0, 0, 0, 0); /* pp, idx, 5 args*/
+
+        printk( KERN_INFO "write to pru_speak_abort\n");
+        return strlen(buf);
+
+}
+
+static ssize_t pru_speak_abort0(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+        return pru_speak_abort(0, dev, attr, buf, count);
+}
+
+/*
+ * syscall #4 - get status of botspeak interpreter
+ *		"read" returns 0 - if no BS code is being executed
+ *		returns 1 - if BS code is being executed 
+ */
+
+static ssize_t pru_speak_status(int idx, struct device *dev, struct device_attribute *attr, char *buf)
+{
+        struct platform_device *pdev = to_platform_device(dev);
+        struct pruproc *pp = platform_get_drvdata(pdev);
+        int ret = pru_downcall_idx(pp, idx, 4, 0, 0, 0, 0, 0); //pp, idx, sys call id, 5 params
+	
+	printk( KERN_INFO "read to pru_speak_status\n");
+        
+	return scnprintf(buf, PAGE_SIZE, "%d", ret);
+}
+
+static ssize_t pru_speak_status0(struct device *dev, struct device_attribute *attr, char *buf)
+{
+        return pru_speak_status(0, dev, attr, buf);
+}
+
+
 
 static DEVICE_ATTR(load, S_IWUSR, NULL, pruproc_store_load);
 static DEVICE_ATTR(reset, S_IWUSR, NULL, pruproc_store_reset);
@@ -1548,6 +1595,8 @@ static DEVICE_ATTR(downcall1, S_IWUSR, NULL, pruproc_store_downcall1);
 static DEVICE_ATTR(pru_speak_debug, S_IWUSR, NULL, pru_speak_debug0);
 static DEVICE_ATTR(pru_speak_shm_init, S_IWUSR | S_IRUGO, pru_speak_shm_init0, NULL);
 static DEVICE_ATTR(pru_speak_execute, S_IWUSR, NULL, pru_speak_execute0);
+static DEVICE_ATTR(pru_speak_abort, S_IWUSR, NULL, pru_speak_abort0);
+static DEVICE_ATTR(pru_speak_status, S_IRUGO, pru_speak_status0, NULL);
 
 /*
  *
@@ -1618,6 +1667,8 @@ static int pruproc_remove(struct platform_device *pdev)
 	device_remove_file(dev, &dev_attr_pru_speak_debug);
 	device_remove_file(dev, &dev_attr_pru_speak_shm_init);
 	device_remove_file(dev, &dev_attr_pru_speak_execute);
+	device_remove_file(dev, &dev_attr_pru_speak_abort);
+	device_remove_file(dev, &dev_attr_pru_speak_status);
 	//sysfs_remove_bin_file( (&dev->kobj), &pru_speak_bin_attr);
 	
 	
@@ -3161,6 +3212,18 @@ static int pruproc_probe(struct platform_device *pdev)
         }
 
 	err = device_create_file(dev, &dev_attr_pru_speak_execute);
+        if (err != 0) {
+                dev_err(dev, "device_create_file failed\n");
+                goto err_fail;
+        }
+
+	err = device_create_file(dev, &dev_attr_pru_speak_abort);
+        if (err != 0) {
+                dev_err(dev, "device_create_file failed\n");
+                goto err_fail;
+        }
+
+        err = device_create_file(dev, &dev_attr_pru_speak_status);
         if (err != 0) {
                 dev_err(dev, "device_create_file failed\n");
                 goto err_fail;

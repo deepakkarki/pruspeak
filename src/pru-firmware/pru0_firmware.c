@@ -8,6 +8,8 @@
 #define SYS_DEBUG	0
 #define SYS_INIT	1
 #define SYS_EXEC	2
+#define SYS_ABRT	3
+#define SYS_STAT	4
 
 #define false	0
 #define true	1
@@ -42,6 +44,10 @@ static int handle_downcall(u32 id, u32 arg0, u32 arg1, u32 arg2,
 		break;
 		
 		case SYS_EXEC:
+			/*
+				arg0 == 0 : pause
+				arg0 == 1 : start/continue
+			*/
 			if(arg0){
 				if (!inst_pointer)
 					inst_pointer = 0; // incase it was not executing before, start
@@ -53,6 +59,15 @@ static int handle_downcall(u32 id, u32 arg0, u32 arg1, u32 arg2,
 			}
 		break;
 
+		case SYS_ABRT:
+			is_executing = false;
+			inst_pointer = 0;
+		break;
+
+		case SYS_STAT:
+		/* returns the status of execution i.e. executing or not */
+			return is_executing;
+		break;
 	}
 
 	return 123;
