@@ -10,12 +10,21 @@
 #define SYS_EXEC	2
 #define SYS_ABRT	3
 #define SYS_STAT	4
+#define SYS_INST	5
 
 #define false	0
 #define true	1
 
+/* base address pointer of the instruction stream */
 u32 *shm_base = 0;
+
+/* the compiled 32 bit instruction */
+u32 single_command = 0;
+
+/* pointer to current instruction in terms of offset */
 int inst_pointer = 0;
+
+/* boolean value, true if there is a botspeak script under execution */
 int is_executing = false;
 
 extern void sc_downcall(int (*handler)(u32 nr, u32 arg0, u32 arg1, u32 arg2, u32 arg3, u32 arg4));
@@ -68,6 +77,15 @@ static int handle_downcall(u32 id, u32 arg0, u32 arg1, u32 arg2,
 		/* returns the status of execution i.e. executing or not */
 			return is_executing;
 		break;
+		
+		case SYS_INST:
+		/* an single instruction has been recieved for execution */
+			single_command = (u32)arg0;
+		break;
+		
+		default:
+			return 1; /* error case - unknown instruction in memory */
+		break;
 	}
 
 	return 123;
@@ -92,11 +110,18 @@ void wait(int time)
 
 void execute_instruction()
 {
-	PRUCFG_SYSCFG = PRUCFG_SYSCFG & (~SYSCFG_STANDBY_INIT); /*enable gloabl access*/
-	u32 inst = *(shm_base + inst_pointer);
-	PRUCFG_SYSCFG = PRUCFG_SYSCFG | SYSCFG_STANDBY_INIT;
-	
-	inst_pointer++;
+	u32 inst;
+	if(!single_command){
+		PRUCFG_SYSCFG = PRUCFG_SYSCFG & (~SYSCFG_STANDBY_INIT); /*enable gloabl access*/
+		inst = *(shm_base + inst_pointer);
+		PRUCFG_SYSCFG = PRUCFG_SYSCFG | SYSCFG_STANDBY_INIT;
+		inst_pointer++;
+	}
+
+	else {
+		inst = single_command;
+		single_command = 0;
+	}
 
 	int cmd = inst >> 24; //most significant byte contains the cmd
 	int pin; 

@@ -1584,7 +1584,33 @@ static ssize_t pru_speak_status0(struct device *dev, struct device_attribute *at
         return pru_speak_status(0, dev, attr, buf);
 }
 
+/*
+ * syscall #5 - ask PRU to execute single BS instruction
+ *		The Byte code of the BS instruction to be executed is written
+ *		to this file.
+ *		return value of downcall = 123 if OK, else value = 1
+ */
 
+static ssize_t pru_speak_single_cmd(int idx, struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+        struct platform_device *pdev = to_platform_device(dev);
+        struct pruproc *pp = platform_get_drvdata(pdev);
+        int inst, ret;
+
+        if (count ==  0)
+                return -1;
+
+	inst = *((int *)buf); //is the byte ordering correct
+        ret = pru_downcall_idx(pp, idx, 5, inst, 0, 0, 0, 0);/*pp, idx, syscall_id, 5 args*/
+
+        printk( KERN_INFO "write to pru_speak_single_cmd. return value of downcall : %d\n", ret);
+        return strlen(buf);
+}
+
+static ssize_t pru_speak_single_cmd0(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+        return pru_speak_single_cmd(0, dev, attr, buf, count);
+}
 
 static DEVICE_ATTR(load, S_IWUSR, NULL, pruproc_store_load);
 static DEVICE_ATTR(reset, S_IWUSR, NULL, pruproc_store_reset);
@@ -1597,7 +1623,7 @@ static DEVICE_ATTR(pru_speak_shm_init, S_IWUSR | S_IRUGO, pru_speak_shm_init0, N
 static DEVICE_ATTR(pru_speak_execute, S_IWUSR, NULL, pru_speak_execute0);
 static DEVICE_ATTR(pru_speak_abort, S_IWUSR, NULL, pru_speak_abort0);
 static DEVICE_ATTR(pru_speak_status, S_IRUGO, pru_speak_status0, NULL);
-
+static DEVICE_ATTR(pru_speak_single_cmd, S_IWUSR, NULL, pru_speak_single_cmd0);
 /*
  *
  *	BIN FILE SYSFS - for mmap'ing. share mem b/w userspace, kernel and PRU
@@ -1669,6 +1695,7 @@ static int pruproc_remove(struct platform_device *pdev)
 	device_remove_file(dev, &dev_attr_pru_speak_execute);
 	device_remove_file(dev, &dev_attr_pru_speak_abort);
 	device_remove_file(dev, &dev_attr_pru_speak_status);
+	device_remove_file(dev, &dev_attr_pru_speak_single_cmd);
 	//sysfs_remove_bin_file( (&dev->kobj), &pru_speak_bin_attr);
 	
 	
@@ -3229,8 +3256,14 @@ static int pruproc_probe(struct platform_device *pdev)
                 goto err_fail;
         }
 
+        err = device_create_file(dev, &dev_attr_pru_speak_single_cmd);
+        if (err != 0) {
+                dev_err(dev, "device_create_file failed\n");
+                goto err_fail;
+        }
+
 /*
-	err = sysfs_create_bin_file(&(dev->kobj), &pru_speak_bin_attr);
+	err = sysfs_create_bin_filr(&(dev->kobj), &pru_speak_bin_attr);
 	if (err != 0){
                 printk(KERN_INFO "BIN FILE could not be created");
                 goto err_fail;
