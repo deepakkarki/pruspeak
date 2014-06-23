@@ -9,5 +9,5 @@ pru0_firmware.obj: pru0_firmware.c pru_firmware.h
 pru0_syscall.obj: pru0_syscall.asm
 	clpru pru0_syscall.asm
 
-install:
+install: all
 	install -T -m 444 pru0_firmware /lib/firmware/pru_firmware
