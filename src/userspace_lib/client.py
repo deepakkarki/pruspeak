@@ -2,9 +2,9 @@ import pru_speak
 #import compiler
 
 botspeak_code	= \
-'''	SET DIO[0] , 1
+'''	SET DIO[4] , 1
 	WAIT 1
-	SET DIO[0], 0
+	SET DIO[4], 0
 	WAIT 1
 	GOTO 0'''
 
