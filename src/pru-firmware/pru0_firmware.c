@@ -161,12 +161,44 @@ void execute_instruction()
 int main()
 {
 	__R30 = 0x00000000; //set all pins to low
+	
+	PRUCFG_ENABLE_GLOBAL; //enable global access
 
+	/* configure timer */
+
+	/* activate the timer, set default inc to 1, set compensation inc to 1 (though this is never used)*/
+	PIEP_GLOBAL_CFG = GLOBAL_CFG_CNT_ENABLE	| GLOBAL_CFG_DEFAULT_INC(1) | GLOBAL_CFG_CMP_INC(1);
+
+	/* clear the counter status bit for CMP0 register, i.e. PIEP_CMP_STATUS[0] */
+	PIEP_CMP_STATUS = CMD_STATUS_CMP_HIT(0); /* clear the interrupt */
+	
+	/* Compare registers enable, enables signal from CMP0*/
+	PIEP_CMP_CFG |= CMP_CFG_CMP_EN(0);
+
+	/* done configuring timer*/
+	
+	/* TEST the timer */	
+	
+	//set 4 sec timeout 
+	PIEP_CMP_CMP0 = 0x2faf0800;
+	
+	while(!(PIEP_CMP_STATUS & 1))
+	{
+		//wait till counter reaches 0x2faf0800 (or 4 sec)
+	}
+	
+	__R30 = 0xFFFFFFFF; //set all pins to high
+
+	while (1) {}
+
+/*
 	while(1)
 	{
 		check_event();
-		if (is_executing)
+		if (is_executing) //or if single_cmd
 			execute_instruction();
 	}
+
 	return 0;
+*/
 }
