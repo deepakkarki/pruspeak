@@ -160,7 +160,7 @@ void execute_instruction()
 
 int main()
 {
-	__R30 = 0x00000000; //set all pins to low
+	__R30 = 0xFFFFFFFF; //set all pins to low
 	
 	PRUCFG_ENABLE_GLOBAL; //enable global access
 
@@ -172,24 +172,39 @@ int main()
 	/* clear the counter status bit for CMP0 register, i.e. PIEP_CMP_STATUS[0] */
 	PIEP_CMP_STATUS = CMD_STATUS_CMP_HIT(0); /* clear the interrupt */
 	
-	/* Compare registers enable, enables signal from CMP0*/
-	PIEP_CMP_CFG |= CMP_CFG_CMP_EN(0);
+	/* Compare registers enable, enables signal from CMP0, on CMP0 --> counter is reset */
+	PIEP_CMP_CFG = PIEP_CMP_CFG | CMP_CFG_CMP_EN(0) | 1;
 
 	/* done configuring timer*/
 	
 	/* TEST the timer */	
-	
-	//set 4 sec timeout 
-	PIEP_CMP_CMP0 = 0x2faf0800;
-	
-	while(!(PIEP_CMP_STATUS & 1))
-	{
-		//wait till counter reaches 0x2faf0800 (or 4 sec)
-	}
-	
-	__R30 = 0xFFFFFFFF; //set all pins to high
 
-	while (1) {}
+	//set 1 sec timeout 
+        PIEP_CMP_CMP0 =  0x2faf0800;
+
+	while(1){
+		
+		while(!(PIEP_CMP_STATUS & 1))
+		{
+			//wait till counter reaches 0xbebc200 (or 1 sec)
+		}
+		__R30 = 0xFFFFFFFF; //set all pins to high
+	
+		PIEP_CMP_STATUS = CMD_STATUS_CMP_HIT(0); //clear bit 0 which should have been set	
+		//PIEP_CMP_CMP0 = 0x2faf0800;
+		//RESET_COUNTER;
+
+                while(!(PIEP_CMP_STATUS & 1))
+                {
+                        //wait till counter reaches 0xbebc200 (or 1 sec)
+                }
+		__R30 = 0x00000000; //set all pins to low
+
+                PIEP_CMP_STATUS = CMD_STATUS_CMP_HIT(0); //clear bit 0 which should have been set       
+		//PIEP_CMP_CMP0 =  0xbebc200;//0x2faf0800; only 1/4th the amount of time 
+		//RESET_COUNTER;
+
+	}
 
 /*
 	while(1)
@@ -200,5 +215,6 @@ int main()
 	}
 
 	return 0;
-*/
+*/	
+	while(1);
 }
