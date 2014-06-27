@@ -4,6 +4,8 @@
 #define IF_EVENT		PINTC_SRSR0 & (1 << EVENT_BIT)
 #define CLEAR_EVENT		(PINTC_SRSR0 = EVENT_BIT)
 
+#define MS 			0x30d40 //number of clock cycles it takes for 1ms
+
 /* sys calls ids*/
 #define SYS_DEBUG	0
 #define SYS_INIT	1
@@ -26,6 +28,9 @@ int inst_pointer = 0;
 
 /* boolean value, true if there is a botspeak script under execution */
 int is_executing = false;
+
+/* boolean value, true if wait is being executed */
+int is_waiting = false;
 
 extern void sc_downcall(int (*handler)(u32 nr, u32 arg0, u32 arg1, u32 arg2, u32 arg3, u32 arg4));
 
@@ -95,17 +100,55 @@ static int handle_downcall(u32 id, u32 arg0, u32 arg1, u32 arg2,
 void check_event(void)
 {
 	if( IF_EVENT ){
-		PINTC_SICR = 21; //clear the system event
+		/* clear the system event */
+		PINTC_SICR = 21; 
+
+		/* call the handler to perform the downcall*/
 		sc_downcall(handle_downcall);
 	}
+	
+
+	if(PIEP_CMP_STATUS & 1){
+
+		/* disable the timer */
+		PIEP_GLOBAL_CFG &= ~(GLOBAL_CFG_CNT_ENABLE);
+
+		/* reset the timer to 0 (timer is a clear to write reg) */
+		PIEP_COUNT = 0XFFFFFFFF;
+
+		/* set CMP0 value back to zero */
+		PIEP_CMP_CMP0 = 0;
+		
+		/* disable events from CMP0*/
+       		PIEP_CMP_CFG &= ~(CMP_CFG_CMP_EN(0));
+
+		/* clear the timer event for CMP0 incase it has been set by mistake */
+                PIEP_CMP_STATUS = CMD_STATUS_CMP_HIT(0);
+
+		/* change the current state of the PRU */
+		is_waiting = false;
+		is_executing = true;
+	}
+
 }
 
-void wait(int time)
-{
-        int i;
-        for(i=0; i < time; i++)
-        {
-        }
+void wait(int ms)
+{	
+	/* set the CMP0 reg value */
+	PIEP_CMP_CMP0 =  MS * ms;
+
+	/* change execution state of the PRU */
+	is_executing = false;
+	is_waiting = true;
+
+	/* enable events from CMP0*/
+	PIEP_CMP_CFG |= CMP_CFG_CMP_EN(0);
+
+	/* clear the timer event for CMP0 incase it has been already set by mistake */
+	PIEP_CMP_STATUS = CMD_STATUS_CMP_HIT(0);
+
+        /* start the timer */
+        PIEP_GLOBAL_CFG |= GLOBAL_CFG_CNT_ENABLE;	
 }
 
 void execute_instruction()
@@ -139,9 +182,8 @@ void execute_instruction()
 		break;
 
 		case 2:
-			//sleep - 1 sec as of now - default. figure out other way later.
-			__delay_cycles(0xbebc200);
-			//wait(0x2bfffff);
+			wait(inst & 0x00FFFFFF);
+			//__delay_cycles(0xbebc200);
 		break;
 
 		case 3:
@@ -158,63 +200,29 @@ void execute_instruction()
 
 }
 
+void timer_init()
+{
+        /* set default inc to 1, set compensation inc to 1 (though this is never used)*/
+        PIEP_GLOBAL_CFG = GLOBAL_CFG_DEFAULT_INC(1) | GLOBAL_CFG_CMP_INC(1);
+
+        /* Compare registers enable, enables signal from CMP0, on CMP0 --> counter is reset */
+        PIEP_CMP_CFG |=  RESET_ON_CMP0_EVENT;
+	
+	/* clear the counter status bit for CMP0 register, i.e. PIEP_CMP_STATUS[0] */
+        PIEP_CMP_STATUS = CMD_STATUS_CMP_HIT(0); /* clear the interrupt */
+}
+
 int main()
 {
-	__R30 = 0xFFFFFFFF; //set all pins to low
 	
-	PRUCFG_ENABLE_GLOBAL; //enable global access
+	timer_init();
 
-	/* configure timer */
-
-	/* activate the timer, set default inc to 1, set compensation inc to 1 (though this is never used)*/
-	PIEP_GLOBAL_CFG = GLOBAL_CFG_CNT_ENABLE	| GLOBAL_CFG_DEFAULT_INC(1) | GLOBAL_CFG_CMP_INC(1);
-
-	/* clear the counter status bit for CMP0 register, i.e. PIEP_CMP_STATUS[0] */
-	PIEP_CMP_STATUS = CMD_STATUS_CMP_HIT(0); /* clear the interrupt */
-	
-	/* Compare registers enable, enables signal from CMP0, on CMP0 --> counter is reset */
-	PIEP_CMP_CFG = PIEP_CMP_CFG | CMP_CFG_CMP_EN(0) | 1;
-
-	/* done configuring timer*/
-	
-	/* TEST the timer */	
-
-	//set 1 sec timeout 
-        PIEP_CMP_CMP0 =  0x2faf0800;
-
-	while(1){
-		
-		while(!(PIEP_CMP_STATUS & 1))
-		{
-			//wait till counter reaches 0xbebc200 (or 1 sec)
-		}
-		__R30 = 0xFFFFFFFF; //set all pins to high
-	
-		PIEP_CMP_STATUS = CMD_STATUS_CMP_HIT(0); //clear bit 0 which should have been set	
-		//PIEP_CMP_CMP0 = 0x2faf0800;
-		//RESET_COUNTER;
-
-                while(!(PIEP_CMP_STATUS & 1))
-                {
-                        //wait till counter reaches 0xbebc200 (or 1 sec)
-                }
-		__R30 = 0x00000000; //set all pins to low
-
-                PIEP_CMP_STATUS = CMD_STATUS_CMP_HIT(0); //clear bit 0 which should have been set       
-		//PIEP_CMP_CMP0 =  0xbebc200;//0x2faf0800; only 1/4th the amount of time 
-		//RESET_COUNTER;
-
-	}
-
-/*
 	while(1)
 	{
 		check_event();
-		if (is_executing) //or if single_cmd
+		if (is_executing || single_command) //or if single_cmd
 			execute_instruction();
 	}
 
 	return 0;
-*/	
-	while(1);
 }

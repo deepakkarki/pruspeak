@@ -68,7 +68,7 @@ __far volatile char C26[0x100] __attribute__((cregister("C26", near)));	/* PRUIE
 #define PIEP_CMP_CMP6		PIEP(0x0060)
 #define PIEP_CMP_CMP7		PIEP(0x0064)
 #define PIEP_CMP_CMP(x)		PIEP(0x0048 + ((x) << 2))
-
+#define RESET_ON_CMP0_EVENT	1
 
 #define false	0
 #define true	1

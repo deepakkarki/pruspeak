@@ -6,9 +6,9 @@ TCP_PORT = 6060
 BUFFER_SIZE = pru_speak.PAGE_SIZE * 2
 MESSAGE = \
 '''     SET DIO[0] , 1
-        WAIT 1
+        WAIT 1000
         SET DIO[0], 0
-        WAIT 1
+        WAIT 1000
         GOTO 0'''
 
 

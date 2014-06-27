@@ -3,9 +3,9 @@ import pru_speak
 
 botspeak_code	= \
 '''	SET DIO[4], 1
-	WAIT 1
+	WAIT 1000
 	SET DIO[4], 0
-	WAIT 1
+	WAIT 1000
 	GOTO 0'''
 
 #print map(lambda x : hex(x), compiler.compile(botspeak_code))
