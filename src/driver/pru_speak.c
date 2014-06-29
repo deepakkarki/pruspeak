@@ -1595,16 +1595,24 @@ static ssize_t pru_speak_single_cmd(int idx, struct device *dev, struct device_a
 {
         struct platform_device *pdev = to_platform_device(dev);
         struct pruproc *pp = platform_get_drvdata(pdev);
-        int inst, ret;
+        int inst = 0, ret, i;
 
         if (count ==  0)
                 return -1;
 
-	inst = *((int *)buf); //is the byte ordering correct
+	//buf[0] = LSB; buf[4] = MSB
+	//the for loop packs the 4 incoming character into a 1 word long integer 
+	//viz one botspeak instruction (byte code)
+	for(i = 0; i < 4; i++){
+		inst |= ((int)buf[i]) << i*8;
+	}
+
         ret = pru_downcall_idx(pp, idx, 5, inst, 0, 0, 0, 0);/*pp, idx, syscall_id, 5 args*/
 
         printk( KERN_INFO "write to pru_speak_single_cmd. return value of downcall : %d\n", ret);
-        return strlen(buf);
+	printk( "STRLEN(buf) : %d\n", strlen(buf)); //prints 0!!
+        //return strlen(buf); 
+	return 4; //quick hack
 }
 
 static ssize_t pru_speak_single_cmd0(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)

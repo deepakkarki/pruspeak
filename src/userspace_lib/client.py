@@ -11,4 +11,4 @@ botspeak_code	= \
 #print map(lambda x : hex(x), compiler.compile(botspeak_code))
 pru_speak.load(botspeak_code)
 pru_speak.execute()
-
+pru_speak.single_instruction("SET DIO[0], 1")

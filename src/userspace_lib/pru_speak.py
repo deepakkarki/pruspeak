@@ -6,6 +6,7 @@ PAGE_SIZE	=	4096
 HOME		=	"/sys/devices/ocp.3/4a300000.prurproc/"
 INIT_FILE	=	HOME + "pru_speak_shm_init"
 EXEC_FILE	=	HOME + "pru_speak_execute"
+SINGLE_INST	=	HOME + "pru_speak_single_cmd"
 MEM_OFF		=	None
 
 def _mem_init( ):
@@ -22,7 +23,7 @@ def load(code, trigger=False):
 	#if the shared memory is not initialized
 	if not MEM_OFF:
 		_mem_init()
-		
+
 	#open /dev/mem and mmap it to access the physical memory through our virtual space.
 	with open("/dev/mem", "r+b" ) as f:
 	
@@ -48,4 +49,16 @@ def execute():
 	with open(EXEC_FILE, "w") as f:
 		f.write('1')
 
+def single_instruction(instruction):
+	'''
+	get the PRU to execute an single instruction
+	'''
+	byte_code = compile(instruction)[0]
 
+	# **WARNING** LSB will be written in first - take note while coding kernel driver
+	to_write = struct.pack("<L", byte_code)
+
+	with open(SINGLE_INST, "w") as f:
+		f.write(to_write)
+
+		
