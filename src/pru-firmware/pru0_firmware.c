@@ -80,7 +80,7 @@ static int handle_downcall(u32 id, u32 arg0, u32 arg1, u32 arg2,
 
 		case SYS_STAT:
 		/* returns the status of execution i.e. executing or not */
-			return is_executing;
+			return (is_executing | is_waiting);
 		break;
 		
 		case SYS_INST:
