@@ -8,6 +8,8 @@ INIT_FILE	=	HOME + "pru_speak_shm_init"
 EXEC_FILE	=	HOME + "pru_speak_execute"
 SINGLE_INST	=	HOME + "pru_speak_single_cmd"
 MEM_OFF		=	None
+SCRIPT_CODE	=	None #string variable. Contains the BS code for a script
+			     #this is loaded into the PRU on RUNSCRIPT command
 
 def _mem_init( ):
 	#read the starting address (physical) of shared memory, also pass it on to the PRU (via downcall)
@@ -52,6 +54,7 @@ def execute():
 def single_instruction(instruction):
 	'''
 	get the PRU to execute an single instruction
+	instruction (string) : single BotSpeak Instruction
 	'''
 	byte_code = compile(instruction)[0]
 
