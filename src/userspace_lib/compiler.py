@@ -56,6 +56,8 @@ def compile(code):
 	takes in the code block, returns a list of BotSpeak bytecode
 	code (str) : the code block with BS instructions seperated by new lines
 	'''
+	code = code.strip()
+	#print "pgm :", pgm
 	pgm = code.split('\n')
 	byte_code = []
 	
