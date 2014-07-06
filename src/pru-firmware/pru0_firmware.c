@@ -75,6 +75,7 @@ static int handle_downcall(u32 id, u32 arg0, u32 arg1, u32 arg2,
 
 		case SYS_ABRT:
 			is_executing = false;
+			is_waiting = false;
 			inst_pointer = 0;
 		break;
 
@@ -126,8 +127,11 @@ void check_event(void)
                 PIEP_CMP_STATUS = CMD_STATUS_CMP_HIT(0);
 
 		/* change the current state of the PRU */
-		is_waiting = false;
-		is_executing = true;
+		if (is_waiting){
+			//there could have been an abort. in case there wasn't :
+			is_executing = true;
+			is_waiting = false;
+		}
 	}
 
 }
