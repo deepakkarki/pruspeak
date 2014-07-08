@@ -45,6 +45,6 @@ TBD: SYSTEM, RUN&WAIT
 ```
 
 The system architecture of the project is well illustrated in this flow chart.
-[](https://raw.githubusercontent.com/wiki/deepakkarki/pruspeak/PRU-Speak-Architecture.png)
+![The PRU Speak Architecture](https://raw.githubusercontent.com/wiki/deepakkarki/pruspeak/PRU-Speak-Architecture.png)
 
 
