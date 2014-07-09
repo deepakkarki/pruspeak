@@ -1,4 +1,4 @@
-mport ply.lex as lex
+import ply.lex as lex
 
 #set of reserved variables
 R_VAR = set(['DIO', 'PWM', 'TONE', 'AIO', 'TMR'])
@@ -39,8 +39,6 @@ tokens = [
 	'LT',		# '<'
 	'EQ',	# '=='
 	'NEQ',	# '!='
-	
-	'COM'	# ','
 ] + reserved
 
 t_GTE		=  r'>='
@@ -49,12 +47,9 @@ t_GT		=  r'>'
 t_LT		=  r'<'
 t_EQ		=  r'=='
 t_NEQ		=  r'!='
-t_COM		=  r','
-t_ignore	=  ' \t'
+t_ignore		=  ' \t'
 
-
-#returned as is
-literals = '[]()'
+literals = '[](),'
 
 def t_INT(t):
 	'\d+'
@@ -69,8 +64,11 @@ def t_VAR(t):
 		#then change the token to 'SET'
 	return t
 
+def t_error(t):
+	print "Illegal character '%s'" % t.value[0]
+
 lexer = lex.lex()
-data = "SET DIO[2], var1"
+data =  '''SET DIO[myvar], 1'''
 lexer.input(data)
 
 if __name__ == '__main__':
