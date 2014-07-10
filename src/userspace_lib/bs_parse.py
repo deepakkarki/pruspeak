@@ -39,6 +39,96 @@ def CLEAR_BIT(val, n):
 	'''
 	return val & ~(1 << n)
 
+def get_var(val):
+	'''
+	takes a val object, value is a var or arr[const]
+	returns the value
+	'''
+	if val.arr_const:
+		#val1 is an const indexed array
+		return pru_arrs[val.val[0]][0] + val[1]
+	else:
+		#val1 is an VAR
+		return pru_vars[val.val]
+
+def byte_code_set(val1, val2):
+	'''
+	encodes instruction of the form SET val1, val2
+	val1 is V/Arr ; val2 can be C/V/Arr(with const or var index)
+	'''
+	OPCODE = 0x10
+	byte0, byte1, byte2 = 0, 0, 0
+	byte4, byte5, byte6, byte7 = 0, 0, 0, 0
+	
+	if val1.arr_var or val2.arr_var:
+		#it is a 64 bit instruction
+		#SET x, y; x or y or both are of form 'Arr[var]'
+		OPCODE += 2
+		
+		if val1.arr_var:
+		#x is an arr[var], y can be anything 
+			byte0 = pru_vars[val1.val[1]]
+			byte1 = pru_arrs[val1.val[0]][0]
+			
+			if val2.type == 'INT':
+			#y is a Const
+				byte2 = 00 << 6
+				byte4 = val2.val
+			
+			elif val2.any_var:
+			#y is a var
+				byte2 = 01 << 6
+				byte4 = get_var(val2)
+			
+			else:
+			#y is arr[var]
+				byte2 = 3 <<6
+				byte4 = pru_vars[val2.val[1]] #var
+				byte5 = pru_arrs[val2.val[0]][0] #arr
+				
+		else:
+		#y is arr[var], x is var/arr[const]
+			byte2 = 2 << 6
+			if val1.any_var:
+				byte0 = get_var(val1)
+				
+			byte4 = pru_vars[val2.val[1]]
+			byte5 = pru_arrs[val2.val[0]][0]
+		
+	else:
+	#32 bit inst SET x, y
+	#x is var or arr[const]; occupies byte2
+	
+		if val1.arr_const:
+		#val1 is an const indexed array
+			byte2 = pru_arrs[val1.val[0]][0] + val1[1]
+		else:
+		#val1 is an VAR
+			byte2 = pru_vars.get(val1.val, None)
+			if byte2 == None:
+				pru_vars[val1.val] = pru_var_count
+				byte2 = pru_var_count
+				pru_var_count += 1
+		
+		if val2.type == "INT": 
+		#type1 : SET x, y; y is a constant
+			byte0 = val2.val #byte0 16 bits since byte1 is unoccupied in this case
+			
+		else: 
+		#type2 : SET x, y; y is a variable
+			OPCODE += 1
+			
+			if val2.arr_const:
+			#val1 is an const indexed array
+				byte0 = pru_arrs[val2.val[0]][0] + val2[1]
+			else:
+			#val1 is an VAR
+				byte0 = pru_vars[val2.val]
+				
+	byte3 = OPCODE
+	print byte3, byte2, byte1, byte0
+	print byte7, byte6, byte5, byte4
+	
 def byte_code_set_r(val1, val2):
 	'''
 	encodes instructions of the form SET DIO[a], arr[b]; 
@@ -145,7 +235,7 @@ cond : GTE
 
 def p_inst_SET(p):
 	'''inst : SET val ',' val'''
-	print "SET command -", " val1 : ", p[2], " val2 : " , p[4]
+	#print "SET command -", " val1 : ", p[2], " val2 : " , p[4]
 	if p[2].flag: 
 		#it is of type SET DIO[x] , y
 		return byte_code_set_r( p[2], p[4])
@@ -223,6 +313,7 @@ def p_error(p):
 	print p
 	print "Syntax error in input!"
 
+
 # Build the parser
 parser = yacc.yacc()
 s = [ 
@@ -236,8 +327,10 @@ s = [
 	'ENDSCRIPT',
 	'GOTO arr3[4]'
 ]
-print parser.parse("SET DIO[var2], arr1[var1]")
+print parser.parse("SET arr1[var1], var2")
 #for inst in s :
 #	parser.parse(inst)
 #print result
+
+
 
