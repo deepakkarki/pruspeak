@@ -1,6 +1,109 @@
 import ply.yacc as yacc
 from bs_lex import *
+from node import *
 
+#keeps track of next available memory offset to place a variable
+pru_var_count = 0
+
+#does the variable to memory mapping work
+pru_vars = {
+		#e.g. "var1" : 0x02,
+		"var1" : 0x02,
+		"var2" : 0x03
+}
+
+#does the array to (address, size) mapping.
+pru_arrs = {#add DIO, PWM etc. here
+		#e.g. "arr1" : (0x10, 5) 
+					#start, size
+		"arr1" : (0x10, 5) 
+}
+
+def BYTE(val, n):
+	'''
+	makes value 'val' the 'n'th byte in return value
+	e.g. BYTE(0x13, 3) will return a number with 0x13 as the 3rd byte
+	here pos will be from 0 to 3
+	'''
+	return val << (n*8)
+
+def SET_BIT(val, n):
+	'''
+	returns val with the Nth bit set high
+	'''
+	return val | (1 << n)
+
+def CLEAR_BIT(val, n):
+	'''
+	returns val with the Nth bit set low
+	'''
+	return val & ~(1 << n)
+
+def byte_code_set_r(val1, val2):
+	'''
+	encodes instructions of the form SET DIO[a], arr[b]; 
+	where DIO can replaced by PWM, TMR, AI etc
+	'''
+	OPCODE_SET = {
+				'DIO' 	: 0x01,
+				'PWM' 	: 0x04,
+				'AIO'	: 0x07,
+				'TONE'	: 0x0A,
+				'TMR'	: 0x0D #till 0x0F
+				}
+	
+	OPCODE = OPCODE_SET[val1.val[0]] #byte3
+	byte0 = 0
+	byte1 = 0
+	byte2 = 0
+	
+	#x == val1.val[1] (val1.val[0] = 'DIO' )
+	#y == val2.val
+	if val2.arr_var:
+		#SET DIO[x], y;  where x is C/V
+		#and y is an variable indexed array value.
+		
+		if not val1.arr_var:
+			#x is a constant
+			OPCODE += 1
+		else :
+			#x is a variable
+			OPCODE += 2
+			
+		byte2 = pru_vars.get(val1.val[1], val1.val[1])
+		#if x is a const, it is returned; else value of variable in pru_vars is returned
+		
+		byte1 = pru_arrs[val2.val[0]][0]
+		#gets the address where pru mem is located
+		
+		byte0 = pru_vars[val2.val[1]]
+		
+	else:
+		#SET DIO[x], y; where x is C/V
+		#and y is C/V/arr[const_val]
+		
+		if val1.arr_var:
+			#implies x is an V
+			byte2 |= 1<<7
+		
+		if val2.type == 'VAR' or val2.type == 'ARR':
+			#implies y is a V
+			byte2 |= 1<<6
+			
+		byte1 = pru_vars.get(val1.val[1], val1.val[1])
+		#if x is a const, it is returned; else value of variable in pru_vars is returned
+		
+		if val2.type == 'ARR' :
+			#if y is an array; should add error checking here - to check overflow
+			byte0 = pru_arrs[val2.val[0]][0] + val2.val[1]#arr address + const
+		
+		else:
+			byte0 = pru_vars.get(val2.val, val2.val)
+			#if y is a const, it is returned; else value of variable in pru_vars is returned
+			
+	#pack all the bytes
+	print OPCODE, byte2, byte1, byte0  #packed_bytes		
+				
 """
 Grammar for the parser :
 
@@ -43,6 +146,11 @@ cond : GTE
 def p_inst_SET(p):
 	'''inst : SET val ',' val'''
 	print "SET command -", " val1 : ", p[2], " val2 : " , p[4]
+	if p[2].flag: 
+		#it is of type SET DIO[x] , y
+		return byte_code_set_r( p[2], p[4])
+	else :
+		return byte_code_set(p[2], p[4])
 
 def p_inst_WAIT(p):
 	'''inst : WAIT val'''
@@ -79,28 +187,27 @@ def p_inst_HALT(p):
 def p_val_INT(p):
 	'''val : INT'''
 	#print p[1]
-	p[0] = p[1]
+	p[0] = Value('INT', p[1])
 
 def p_val_VAR(p):
 	'''val : VAR'''
-	#print p[1]
-	p[0] = p[1]
+	p[0] = Value('VAR', p[1])
 	
 def p_val_arr(p):
 	'''val : arr'''
-	#print p[1]
 	p[0] = p[1]
 	
 def p_arr_VAR1(p):
 	"""arr : VAR '[' INT ']' """
-	#print "p_arr_VAR1 : p = ", p
-	#print "p_arr_VAR1" , p[1], p[3]
-	p[0] = (p[1], p[3])
+	flag = p[1] in R_VAR
+	#should I convert it into a var and send it from here itself? No - how  to handle DIO, PWM etc?
+	p[0] = Value("ARR", (p[1], p[3]), flag)
+		
 	
 def p_arr_VAR2(p):
 	"""arr : VAR '[' VAR ']' """
-	#print "p_arr_VAR2 : p[1], [2]" ,  p[1], p[3]
-	p[0] = ( p[1], p[3])
+	flag = p[1] in R_VAR
+	p[0] = Value("ARR", (p[1], p[3]), flag)
 	
 def p_cond_ops(p):
 	'''cond : GTE
@@ -116,7 +223,6 @@ def p_error(p):
 	print p
 	print "Syntax error in input!"
 
-
 # Build the parser
 parser = yacc.yacc()
 s = [ 
@@ -130,7 +236,8 @@ s = [
 	'ENDSCRIPT',
 	'GOTO arr3[4]'
 ]
-for inst in s :
-	parser.parse(inst)
+print parser.parse("SET DIO[var2], arr1[var1]")
+#for inst in s :
+#	parser.parse(inst)
 #print result
 
