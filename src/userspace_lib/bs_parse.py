@@ -607,6 +607,11 @@ def p_inst_BSL(p):
 	print "SUB command -", " val1 : ", p[2], " val2 : " , p[4]
 	p[0] = byte_code_arithmetic(p[1], p[2], p[4])
 
+def p_inst_NOT(p):
+	'''inst : NOT val ',' val'''
+	print "NOT command -", " val1 : ", p[2], " val2 : " , p[4]
+	p[0] = byte_code_arithmetic(p[1], p[2], p[4])
+
 def p_inst_HALT(p):
 	'''inst : HALT'''
 	p[0] = 0xF0
@@ -667,6 +672,10 @@ def p_inst_ABORT(p):
 	'''inst : ABORT'''
 	p[0] = byte_code_ctrl(p[1])
 
+def p_inst_SYSTEM(p):
+	'''inst : SYSTEM'''
+	p[0] = byte_code_ctrl(p[1])
+	
 # Error rule for syntax errors
 def p_error(p):
 	print p
