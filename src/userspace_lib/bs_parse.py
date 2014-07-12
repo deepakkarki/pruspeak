@@ -2,6 +2,9 @@ import ply.yacc as yacc
 from bs_lex import *
 from node import *
 
+#**********INCASE opcodes get over, we can compress a few later***************
+
+
 #keeps track of next available memory offset to place a variable
 pru_var_count = 0
 
@@ -348,18 +351,22 @@ def byte_code_arithmetic(cmd, val1, val2):
 	AND, SUB, MUL, DIV
 	BSR, BSL, AND, NOT
 	'''
-	#opcode starts from 48 (11-0000), ends at 63(11-1111)
-	#This inst owns the (0011-XXXX) address space
+	#opcode starts from 48 (11-0000), ends at 79(100-1111)
 	
 	opcode_dict = {
+		#These inst own the (0011-XXXX) address space
 					'ADD'	: 48,
 					'SUB'	: 50,
 					'MUL'	: 52,
 					'DIV'	: 54, 
-					'BSL'	: 56,
-					'BSR'	: 58, 
-					'AND'	: 60,
-					'NOT'	: 62
+					'MOD'	: 56,
+					
+		#These inst own the (0100-XXXX) address space 
+					'BSL'	: 64,
+					'BSR'	: 66, 
+					'AND'	: 68,
+					'OR'	: 70,
+					'NOT'	: 72
 	}
 	
 	OPCODE = opcode_dict[cmd]
@@ -455,6 +462,13 @@ def byte_code_arithmetic(cmd, val1, val2):
 #control variables (like pre processor stuff or rather compiler directives, 
 #not to be compiled: (END)SCRIPT, RUN, ABORT, DEBUG, RESET - run by python compiler module
 
+def byte_code_ctrl(val):
+	'''
+	stuff like SCRIPT, ENDSCRIPT,
+	RUN, ABORT, DEBUG, etc.
+	'''
+	return val
+
 """
 Grammar for the parser :
 
@@ -499,51 +513,78 @@ def p_inst_SET(p):
 	#print "SET command -", " val1 : ", p[2], " val2 : " , p[4]
 	if p[2].flag: 
 		#it is of type SET DIO[x] , y
-		return byte_code_set_r( p[2], p[4])
+		p[0] = byte_code_set_r( p[2], p[4])
 	else :
-		return byte_code_set(p[2], p[4])
+		p[0] = byte_code_set(p[2], p[4])
 
 def p_inst_WAIT(p):
 	'''inst : WAIT val'''
 	print "WAIT command - val :", p[2]
-	byte_code_single_op(p[1], p[2])
+	p[0] = byte_code_single_op(p[1], p[2])
 	
 def p_inst_GOTO(p):
 	'''inst : GOTO val'''
 	print "GOTO command - val :", p[2]
-	byte_code_single_op(p[1], p[2])
+	p[0] = byte_code_single_op(p[1], p[2])
 	
 def p_inst_GET(p):
 	'''inst : GET val'''
 	print "GET command - val :", p[2]
-	byte_code_single_op(p[1], p[2])
+	p[0] = byte_code_single_op(p[1], p[2])
 
 def p_inst_IF(p):
 	'''inst : IF '(' val cond val ')' GOTO val'''
 	print "IF command - ", "val1 :", p[3], "val2 :", p[5], "cond :", p[4], "GOTO :", p[8]
-	byte_code_if(p[3], p[5], p[4], p[8])
+	p[0] = byte_code_if(p[3], p[5], p[4], p[8])
 	
 def p_inst_ADD(p):
 	'''inst : ADD val ',' val'''
 	print "ADD command -", " val1 : ", p[2], " val2 : " , p[4]
-	byte_code_arithmetic(p[1], p[2], p[4])
+	p[0] = byte_code_arithmetic(p[1], p[2], p[4])
 	
 def p_inst_SUB(p):
 	'''inst : SUB val ',' val'''
 	print "SUB command -", " val1 : ", p[2], " val2 : " , p[4]
-	byte_code_arithmetic(p[1], p[2], p[4])
+	p[0] = byte_code_arithmetic(p[1], p[2], p[4])
 
-def p_inst_SCRIPT(p):
-	'''inst : SCRIPT'''
-	print 'SCRIPT'
+def p_inst_MUL(p):
+	'''inst : MUL val ',' val'''
+	print "MUL command -", " val1 : ", p[2], " val2 : " , p[4]
+	p[0] = byte_code_arithmetic(p[1], p[2], p[4])
 
-def p_inst_ENDSCRIPT(p):
-	'''inst : ENDSCRIPT'''
-	print 'ENDSCRIPT'
+def p_inst_DIV(p):
+	'''inst : DIV val ',' val'''
+	print "DIV command -", " val1 : ", p[2], " val2 : " , p[4]
+	p[0] = byte_code_arithmetic(p[1], p[2], p[4])
+
+def p_inst_MOD(p):
+	'''inst : MOD val ',' val'''
+	print "MOD command -", " val1 : ", p[2], " val2 : " , p[4]
+	p[0] = byte_code_arithmetic(p[1], p[2], p[4])
+
+def p_inst_AND(p):
+	'''inst : AND val ',' val'''
+	print "AND command -", " val1 : ", p[2], " val2 : " , p[4]
+	p[0] = byte_code_arithmetic(p[1], p[2], p[4])
+
+def p_inst_OR(p):
+	'''inst : OR val ',' val'''
+	print "OR command -", " val1 : ", p[2], " val2 : " , p[4]
+	p[0] = byte_code_arithmetic(p[1], p[2], p[4])
+	
+def p_inst_BSR(p):
+	'''inst : BSR val ',' val'''
+	print "SUB command -", " val1 : ", p[2], " val2 : " , p[4]
+	p[0] = byte_code_arithmetic(p[1], p[2], p[4])
+	
+def p_inst_BSL(p):
+	'''inst : BSL val ',' val'''
+	print "SUB command -", " val1 : ", p[2], " val2 : " , p[4]
+	p[0] = byte_code_arithmetic(p[1], p[2], p[4])
 
 def p_inst_HALT(p):
 	'''inst : HALT'''
-	print "HALT"
+	p[0] = 0xF0
 
 def p_val_INT(p):
 	'''val : INT'''
@@ -563,7 +604,7 @@ def p_arr_VAR1(p):
 	flag = p[1] in R_VAR
 	#should I convert it into a var and send it from here itself? No - how  to handle DIO, PWM etc?
 	p[0] = Value("ARR", (p[1], p[3]), flag)
-		
+	
 	
 def p_arr_VAR2(p):
 	"""arr : VAR '[' VAR ']' """
@@ -579,6 +620,28 @@ def p_cond_ops(p):
 		| NEQ'''
 	p[0] = p[1]
 
+
+#control instructions
+def p_inst_SCRIPT(p):
+	'''inst : SCRIPT'''
+	p[0] = byte_code_ctrl(p[1])
+
+def p_inst_ENDSCRIPT(p):
+	'''inst : ENDSCRIPT'''
+	p[0] = byte_code_ctrl(p[1])
+	
+def p_inst_RUN(p):
+	'''inst : RUN'''
+	p[0] = byte_code_ctrl(p[1])
+	
+def p_inst_DEBUG(p):
+	'''inst : DEBUG'''
+	p[0] = byte_code_ctrl(p[1])
+	
+def p_inst_ABORT(p):
+	'''inst : ABORT'''
+	p[0] = byte_code_ctrl(p[1])
+
 # Error rule for syntax errors
 def p_error(p):
 	print p
@@ -588,20 +651,26 @@ def p_error(p):
 # Build the parser
 parser = yacc.yacc()
 s = [ 
-	'SET DIO[myvar], 1', 
-	'IF (a > b) GOTO c' , 
-	'ADD myvar, 5', 
-	'SUB arr[4], another_var',
+	'SET DIO[var2], 1', 
+	'IF (arr1[var2] > var3) GOTO arr2[3]' , 
+	'ADD var1, 5', 
+	'SUB arr1[4], arr2[var3]',
 	'GOTO 4',
-	'IF ( arr1[a] < arr2[b] ) GOTO arr3[c]',
+	'IF ( arr1[var1] < arr1[var2] ) GOTO arr2[var3]',
 	'SCRIPT',
 	'ENDSCRIPT',
-	'GOTO arr3[4]'
+	'GOTO arr1[4]'
 ]
-print parser.parse("SET var22, arr2[var2]")
-#for inst in s :
-#	parser.parse(inst)
-#print result
 
+try :
+	print parser.parse("OR arr1[4], arr2[4]")
+except Exception as e:
+	print "some error"
+	print e.args
+
+for inst in s :
+	print inst
+	parser.parse(inst)
+	print ''
 
 
