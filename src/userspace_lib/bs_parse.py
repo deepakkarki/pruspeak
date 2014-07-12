@@ -3,8 +3,7 @@ from bs_lex import *
 from node import *
 
 #**********INCASE opcodes get over, we can compress a few later***************
-
-
+		
 #keeps track of next available memory offset to place a variable
 pru_var_count = 0
 
@@ -44,6 +43,16 @@ def CLEAR_BIT(val, n):
 	'''
 	return val & ~(1 << n)
 
+def pack_byte(b3, b2, b1, b0):
+	'''
+	takes 4 bytes and packs it into an integer
+	'''
+	if len (filter(lambda x : x < 256, (b3, b2, b1, b0))) < 4:
+		print "error - param > 256"
+		return 0
+		
+	return b3 << 3*8 | b2 << 2*8 | b1 << 1*8 | b0
+
 def get_var(val):
 	'''
 	takes a val object, value is a var or arr[const]
@@ -56,98 +65,7 @@ def get_var(val):
 		#val1 is an VAR
 		return pru_vars[val.val]
 
-def byte_code_set(val1, val2):
-	'''
-	encodes instruction of the form SET val1, val2
-	val1 is V/Arr ; val2 can be C/V/Arr(with const or var index)
-	'''
-	global pru_var_count
-	#opcodes used 16, 17, 18
-	OPCODE = 0x10
-	byte0, byte1, byte2 = 0, 0, 0
-	byte4, byte5, byte6, byte7 = 0, 0, 0, 0
-	
-	if val1.arr_var or val2.arr_var:
-		#it is a 64 bit instruction
-		#SET x, y; x or y or both are of form 'Arr[var]'
-		OPCODE += 2
-		
-		if val1.arr_var:
-		#x is an arr[var], y can be anything 
-			byte0 = pru_vars[val1.val[1]]
-			byte1 = pru_arrs[val1.val[0]][0]
-			byte2 |= 0b10 << 6
-			
-			if val2.type == 'INT':
-			#y is a Const
-				byte2 |= 0b00 << 4
-				byte4 = val2.val
-			
-			elif val2.any_var:
-			#y is a var
-				byte2 |= 0b01 << 4
-				byte4 = get_var(val2)
-			
-			else:
-			#y is arr[var]
-				byte2 |= 0b10 <<4
-				byte4 = pru_vars[val2.val[1]] #var
-				byte5 = pru_arrs[val2.val[0]][0] #arr
-				
-		else:
-		#y is arr[var], x is var/arr[const]
-			if val1.any_var:
-				byte2 |= 0b01 << 4
-				
-				if val1.arr_const:
-				#val1 is an const indexed array
-					byte0 = pru_arrs[val1.val[0]][0] + val1.val[1]
-				else:
-				#val1 is an VAR
-					byte0 = pru_vars.get(val1.val, None)
-					if byte0 == None:
-						pru_vars[val1.val] = pru_var_count
-						byte0 = pru_var_count
-						pru_var_count += 1	
 
-			byte2 |= 0b10 << 4
-			byte4 = pru_vars[val2.val[1]]
-			byte5 = pru_arrs[val2.val[0]][0]
-		
-	else:
-	#32 bit inst SET x, y
-	#x is var or arr[const]; occupies byte2
-	
-		if val1.arr_const:
-		#val1 is an const indexed array
-			byte2 = pru_arrs[val1.val[0]][0] + val1.val[1]
-		else:
-		#val1 is an VAR
-			byte2 = pru_vars.get(val1.val, None)
-			if byte2 == None:
-				pru_vars[val1.val] = pru_var_count
-				byte2 = pru_var_count
-				pru_var_count += 1
-		
-		if val2.type == "INT": 
-		#type1 : SET x, y; y is a constant
-			byte0 = val2.val #byte0 16 bits since byte1 is unoccupied in this case
-			
-		else: 
-		#type2 : SET x, y; y is a variable
-			OPCODE += 1
-			
-			if val2.arr_const:
-			#val1 is an const indexed array
-				byte0 = pru_arrs[val2.val[0]][0] + val2.val[1]
-			else:
-			#val1 is an VAR
-				byte0 = pru_vars[val2.val]
-				
-	byte3 = OPCODE
-	print byte3, byte2, byte1, byte0
-	print byte7, byte6, byte5, byte4
-	
 def byte_code_set_r(val1, val2):
 	'''
 	encodes instructions of the form SET DIO[a], arr[b]; 
@@ -212,19 +130,119 @@ def byte_code_set_r(val1, val2):
 			#if y is a const, it is returned; else value of variable in pru_vars is returned
 			
 	#pack all the bytes
+	return pack_byte(OPCODE, byte2, byte1, byte0)
+	
 	print OPCODE, byte2, byte1, byte0  #packed_bytes		
 				
 
+def byte_code_set(val1, val2):
+	'''
+	encodes instruction of the form SET val1, val2
+	val1 is V/Arr ; val2 can be C/V/Arr(with const or var index)
+	'''
+	global pru_var_count
+	#opcodes used 16, 17, 18 -19 is reserved, just incase for future
+	OPCODE = 0x10
+	byte0, byte1, byte2 = 0, 0, 0
+	byte4, byte5, byte6, byte7 = 0, 0, 0, 0
+	
+	if val1.arr_var or val2.arr_var:
+		#it is a 64 bit instruction
+		#SET x, y; x or y or both are of form 'Arr[var]'
+		OPCODE += 2
+		
+		if val1.arr_var:
+		#x is an arr[var], y can be anything 
+			byte0 = pru_vars[val1.val[1]]
+			byte1 = pru_arrs[val1.val[0]][0]
+			byte2 |= 0b10 << 6
+			
+			if val2.type == 'INT':
+			#y is a Const
+				byte2 |= 0b00 << 4
+				byte4 = val2.val
+			
+			elif val2.any_var:
+			#y is a var
+				byte2 |= 0b01 << 4
+				byte4 = get_var(val2)
+			
+			else:
+			#y is arr[var]
+				byte2 |= 0b10 <<4
+				byte4 = pru_vars[val2.val[1]] #var
+				byte5 = pru_arrs[val2.val[0]][0] #arr
+				
+		else:
+		#y is arr[var], x is var/arr[const]
+			if val1.any_var:
+				byte2 |= 0b01 << 4
+				
+				if val1.arr_const:
+				#val1 is an const indexed array
+					byte0 = pru_arrs[val1.val[0]][0] + val1.val[1]
+				else:
+				#val1 is an VAR
+					byte0 = pru_vars.get(val1.val, None)
+					if byte0 == None:
+						pru_vars[val1.val] = pru_var_count
+						byte0 = pru_var_count
+						pru_var_count += 1	
+
+			byte2 |= 0b10 << 4
+			byte4 = pru_vars[val2.val[1]]
+			byte5 = pru_arrs[val2.val[0]][0]
+		
+		return pack_byte(OPCODE, byte2, byte1, byte0), pack_byte(byte7, byte6, byte5, byte4)
+	else:
+	#32 bit inst SET x, y
+	#x is var or arr[const]; occupies byte2
+	
+		if val1.arr_const:
+		#val1 is an const indexed array
+			byte2 = pru_arrs[val1.val[0]][0] + val1.val[1]
+		else:
+		#val1 is an VAR
+			byte2 = pru_vars.get(val1.val, None)
+			if byte2 == None:
+				pru_vars[val1.val] = pru_var_count
+				byte2 = pru_var_count
+				pru_var_count += 1
+		
+		if val2.type == "INT": 
+		#type1 : SET x, y; y is a constant
+			byte0 = val2.val #byte0 16 bits since byte1 is unoccupied in this case
+			
+		else: 
+		#type2 : SET x, y; y is a variable
+			OPCODE += 1
+			
+			if val2.arr_const:
+			#val1 is an const indexed array
+				byte0 = pru_arrs[val2.val[0]][0] + val2.val[1]
+			else:
+			#val1 is an VAR
+				byte0 = pru_vars[val2.val]
+				
+		#return the byte encoded information
+		return pack_byte(byte3, byte2, byte1, byte0)
+	
+	#redunt - could be useful for debugging
+	byte3 = OPCODE
+	print byte3, byte2, byte1, byte0
+	print byte7, byte6, byte5, byte4
+	
+	
 def byte_code_single_op(cmd, val):
 	'''
 	single operand instructions
 	e.g. WAIT, GOTO, GET
 	'''
-	#opcode 19
+	#opcode 20-22
 	opcode_dict = {
-				'WAIT'	: 19,
-				'GOTO'	: 20,
-				'GET'	: 21
+				'WAIT'	: 20,
+				'GOTO'	: 21,
+				'GET'	: 22
 	}
 	OPCODE = opcode_dict[cmd]
 	byte2, byte1, byte0 = 0, 0, 0
@@ -245,12 +263,8 @@ def byte_code_single_op(cmd, val):
 		byte1 = pru_arrs[val.val[0]][0]
 	
 	byte3 = OPCODE
-	
+	return pack_byte(OPCODE, byte2, byte1, byte0)
 	print byte3, byte2, byte1, byte0
-	
-def byte_code_goto(val):
-	#opcode 20
-	pass
 	
 def byte_code_if(val1, val2, cond, goto):
 	'''
@@ -340,6 +354,10 @@ def byte_code_if(val1, val2, cond, goto):
 		byte6 = pru_vars[goto.val[1]]
 		byte7 = pru_arrs[goto.val[0]][0]
 	
+	
+	return pack_byte(OPCODE, byte2, byte1, byte0), pack_byte(byte7, byte6, byte5, byte4)
+	
+	#just in case - debugging
 	byte3 = OPCODE
 	print byte3, byte2, byte1, byte0
 	print byte7, byte6, byte5, byte4		
@@ -348,8 +366,8 @@ def byte_code_if(val1, val2, cond, goto):
 def byte_code_arithmetic(cmd, val1, val2):
 	'''
 	generates code for two operand arithmetic instructions
-	AND, SUB, MUL, DIV
-	BSR, BSL, AND, NOT
+	AND, SUB, MUL, DIV, MOD
+	BSR, BSL, AND, OR, NOT
 	'''
 	#opcode starts from 48 (11-0000), ends at 79(100-1111)
 	
@@ -424,7 +442,10 @@ def byte_code_arithmetic(cmd, val1, val2):
 			byte2 |= 0b10 << 4
 			byte4 = pru_vars[val2.val[1]]
 			byte5 = pru_arrs[val2.val[0]][0]
-			
+	
+		#return 64bit encoded inst		
+		return pack_byte(OPCODE, byte2, byte1, byte0), pack_byte(byte7, byte6, byte5, byte4)
+	
 	else:
 		#32 bit instr
 		#x, y : V/C
@@ -454,7 +475,11 @@ def byte_code_arithmetic(cmd, val1, val2):
 			print "val1 : VAR"
 			byte2 |= 0b01 << 6
 			byte0 = get_var(val2)
-
+			
+		#return 32bit encoded instruction
+		return pack_byte(OPCODE, byte2, byte1, byte0)
+		
+	#debugging
 	byte3= OPCODE
 	print byte3, byte2, byte1, byte0
 	print byte7, byte6, byte5, byte4
@@ -650,7 +675,9 @@ def p_error(p):
 
 # Build the parser
 parser = yacc.yacc()
-s = [ 
+
+if __name__ == '__main__':
+	s = [ 
 	'SET DIO[var2], 1', 
 	'IF (arr1[var2] > var3) GOTO arr2[3]' , 
 	'ADD var1, 5', 
@@ -661,16 +688,15 @@ s = [
 	'ENDSCRIPT',
 	'GOTO arr1[4]'
 ]
+	try :
+		print parser.parse("OR arr1[4], arr2[4]")
+	except Exception as e:
+		print "some error"
+		print e.args
 
-try :
-	print parser.parse("OR arr1[4], arr2[4]")
-except Exception as e:
-	print "some error"
-	print e.args
-
-for inst in s :
-	print inst
-	parser.parse(inst)
-	print ''
-
+	for inst in s :
+		print inst
+		res = parser.parse(inst)
+		print res
+		print ''
 
