@@ -1,3 +1,4 @@
+#NOTE: This is a substitute for pruspeak.py in this new userspace interface
 #This is the frontend userspace component of the interpreter
 #The developer API interface exposed looks like this :
 #	Userfrontend <-  Shell  <- this API
@@ -13,7 +14,7 @@ def _get_return_value():
 	'''
 	gets the return value of the last executed instruction
 	'''
-	return 1 #for now
+	return 1 #for now. (I think this should be moved to kernel lib, though)
 	
 	
 def str_to_list(code):
@@ -63,7 +64,12 @@ def execute_instruction(cmd_set):
 					kernel_lib.execute()
 			else :
 				return return_values.append(-1)
+	
+		elif inst == 'DEBUG' or inst == 'ABORT'	:
+			pass
+			#not handling it now
 		
+		#from here, it has to be non-control instruction
 		elif script_mode:
 			#incase there is an ongoing SCRIPT being defined
 			byte_code  = parser.parse(inst)
