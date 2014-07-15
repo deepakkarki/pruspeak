@@ -1,38 +1,5 @@
 #include "pru_firmware.h"
-
-#define EVENT_BIT		21
-#define IF_EVENT		PINTC_SRSR0 & (1 << EVENT_BIT)
-#define CLEAR_EVENT		(PINTC_SRSR0 = EVENT_BIT)
-
-#define MS 			0x30d40 //number of clock cycles it takes for 1ms
-
-/* sys calls ids*/
-#define SYS_DEBUG	0
-#define SYS_INIT	1
-#define SYS_EXEC	2
-#define SYS_ABRT	3
-#define SYS_STAT	4
-#define SYS_INST	5
-
-#define false	0
-#define true	1
-
-/* base address pointer of the instruction stream */
-u32 *shm_base = 0;
-
-/* the compiled 32 bit instruction */
-u32 single_command = 0;
-
-/* pointer to current instruction in terms of offset */
-int inst_pointer = 0;
-
-/* boolean value, true if there is a botspeak script under execution */
-int is_executing = false;
-
-/* boolean value, true if wait is being executed */
-int is_waiting = false;
-
-extern void sc_downcall(int (*handler)(u32 nr, u32 arg0, u32 arg1, u32 arg2, u32 arg3, u32 arg4));
+#include "pru0_firmware.h"
 
 
 static int handle_downcall(u32 id, u32 arg0, u32 arg1, u32 arg2,
