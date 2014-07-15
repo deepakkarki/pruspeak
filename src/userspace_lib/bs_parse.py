@@ -225,7 +225,7 @@ def byte_code_set(val1, val2):
 				byte0 = pru_vars[val2.val]
 				
 		#return the byte encoded information
-		return pack_byte(byte3, byte2, byte1, byte0)
+		return pack_byte(OPCODE, byte2, byte1, byte0)
 	
 	#redunt - could be useful for debugging
 	byte3 = OPCODE

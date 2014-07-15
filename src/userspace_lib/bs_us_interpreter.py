@@ -95,10 +95,12 @@ def execute_instruction(cmd_set):
 	
 if __name__ == '__main__':
 	s = '''
+	SET var1, 1
+	SET var2, 0
 	SCRIPT 
-	SET DIO[0] , 1
+		SET DIO[0] , var1
 		WAIT 1
-		SET DIO[0], 0
+		SET DIO[0], var2
 		WAIT 1
 		GOTO 0
 	ENDSCRIPT
@@ -106,5 +108,5 @@ if __name__ == '__main__':
 		'''
 		
 	print str_to_list(s)
-	res = execute_instruction(["SET DIO[0], 0"])
+	res = execute_instruction(["SET var2, 1"])
 	print res
