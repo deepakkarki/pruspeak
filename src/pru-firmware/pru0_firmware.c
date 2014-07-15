@@ -9,14 +9,14 @@ void wait(int);
 void dio_handler(int opcode, u32 inst)
 {
 	int val1, val2;
-	if(opcode == 1){
+	if(opcode == SET_DIO_a){
 	/* SET DIO[c/v], c/v */
 
 		val1 = GET_BIT(inst, 23) ? var_loc[GET_BYTE(inst, 1)]: GET_BYTE(inst, 1);
 		val2 = GET_BIT(inst, 22) ? var_loc[GET_BYTE(inst, 0)]: GET_BYTE(inst, 0);
 	}
 
-	else if (opcode == 2){
+	else if (opcode == SET_DIO_b){
 	/* SET DIO[c], arr[v] */
 		val1 = GET_BYTE(inst, 2);
 		int addr = GET_BYTE(inst, 1) + GET_BYTE(inst, 0);
@@ -40,6 +40,59 @@ void dio_handler(int opcode, u32 inst)
         	__R30 = __R30 & ~( 1 << val1);
         }
 
+}
+
+void set_handler(int opcode, u32 inst)
+{
+	int val1, val2;
+
+	if(opcode == SET_32_a){
+	/* SET V, C */
+		val1 = GET_BYTE(inst,2);
+		val2 = inst & 0xffff; //16 bit constant
+		var_loc[val1] = val2;
+	}
+
+	else if(opcode == SET_32_b){
+	/* SET V, V */
+		val1 = GET_BYTE(inst,2);
+		val2 = GET_BYTE(inst,0);
+		var_loc[val1] = var_loc[val2];
+	}
+
+	else{
+	/* SET V/Arr[v], C/V/Arr[v] */
+		int op = GET_BYTE(inst, 2) >> 6;
+
+		//if op == 1, operand1 is a variable; else it is a Arr[v] type
+		val1 = (op == 1) ? GET_BYTE(inst, 0): (GET_BYTE(inst,1) + GET_BYTE(inst, 0));
+		
+		//get the next 32 bits of the inst
+		PRUCFG_SYSCFG = PRUCFG_SYSCFG & (~SYSCFG_STANDBY_INIT); /*enable gloabl access*/
+                inst = *(shm_base + inst_pointer);
+                PRUCFG_SYSCFG = PRUCFG_SYSCFG | SYSCFG_STANDBY_INIT;
+                inst_pointer++;
+		
+		op = ((GET_BYTE(inst, 2) >> 4) & 3); //get bits 4 and 5 of byte2
+
+		if (op == 0){
+		//operand2 is of type C
+			val2 = inst & 0xFF;
+			var_loc[val1] = val2;
+		}
+
+		if (op == 1){
+		//operand2 is of type V
+			val2 = GET_BYTE(inst,0);
+			var_loc[val1] = var_loc[val2];
+		}
+
+		else{
+		//second operand is of type Arr[v]
+			val2 = GET_BYTE(inst, 1) + GET_BYTE(inst, 0);
+			var_loc[val1] = var_loc[val2];
+		}
+	}
 }
 
 void wait_handler(int opcode, u32 inst)
@@ -231,6 +284,12 @@ void execute_instruction()
 		case SET_DIO_b:
 		case SET_DIO_c:
 			dio_handler(opcode, inst);
+		break;
+
+		case SET_32_a:
+		case SET_32_b:
+		case SET_64:
+			set_handler(opcode, inst);
 		break;
 		
 		case WAIT:
