@@ -1,6 +1,7 @@
 #include "pru_firmware.h"
 #include "pru0_firmware.h"
 
+int var_loc[128];
 
 static int handle_downcall(u32 id, u32 arg0, u32 arg1, u32 arg2,
 		u32 arg3, u32 arg4)

@@ -45,4 +45,61 @@ int is_waiting = false;
 
 extern void sc_downcall(int (*handler)(u32 nr, u32 arg0, u32 arg1, u32 arg2, u32 arg3, u32 arg4));
 
+/*instruction set encoding */
+#define NOP		0
+
+/*SET RES[x], y - IO operations*/
+#define SET_DIO_a	1
+#define SET_DIO_b	2
+#define SET_DIO_c	3
+#define SET_PWM_a	4
+#define SET_PWM_b	5
+#define SET_PWM_c	6
+#define SET_AIO_a	7
+#define SET_AIO_b	8
+#define SET_AIO_c	9
+
+/*Variable set operations*/
+#define SET_32_a	16
+#define SET_32_b	17
+#define SET_64		18
+
+/*If conditions*/
+#define IF_EQ		32
+#define IF_NEQ		33
+#define IF_GTE		34
+#define IF_LTE		35
+#define IF_GT		36
+#define IF_LT		37
+
+/*single operand instructions*/
+#define WAIT		20
+#define GOTO		21
+#define GET		22
+
+/*arithmetic instructions*/
+#define ADD_32		48
+#define ADD_64		49
+#define SUB_32		50
+#define SUB_64		51
+#define MUL_32		52
+#define MUL_64		53
+#define DIV_32		54
+#define DIV_64		55
+#define MOD_32		56
+#define MOD_64		57
+
+/*bit wise operations*/
+#define BSL_32		64
+#define BSL_64		65
+#define BSR_32		66
+#define BSR_64		67
+#define AND_32		68
+#define AND_64		69
+#define OR_32		70
+#define OR_64		71
+#define NOT_32		72
+#define NOT_64		73
+
+#define HALT		240
 
