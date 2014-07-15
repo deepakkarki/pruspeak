@@ -38,9 +38,10 @@ def execute_instruction(cmd_set):
 	cmd_set : either a list or a string; 
 		if it is a str, it is internally converted to a list first
 	'''
+	global script_mode
 	return_values = []
 	if type(cmd_set) == str:
-		cmd_set = str_to_list(code)
+		cmd_set = str_to_list(cmd_set)
 	
 	for inst in cmd_set:
 		if inst == 'SCRIPT':
@@ -60,7 +61,7 @@ def execute_instruction(cmd_set):
 			
 		elif inst == 'RUN':
 			if script_code and (not script_mode) :
-					kernel_lib.load()
+					kernel_lib.load(script_code)
 					kernel_lib.execute()
 			else :
 				return return_values.append(-1)
@@ -85,18 +86,25 @@ def execute_instruction(cmd_set):
 			
 		else:
 			#case of normal instruction
-			kernel_lib.single_instruction(inst)
+			byte_code = parser.parse(inst)
+			kernel_lib.single_instruction(byte_code)
 			return_values.append(_get_return_value())
 			#byte_code = parser.parse(inst)
 		
+	return return_values
 	
 if __name__ == '__main__':
-	s = ''' 
+	s = '''
+	SCRIPT 
 	SET DIO[0] , 1
 		WAIT 1
 		SET DIO[0], 0
 		WAIT 1
 		GOTO 0
+	ENDSCRIPT
+	RUN
 		'''
 		
 	print str_to_list(s)
+	res = execute_instruction(["SET DIO[0], 0"])
+	print res
