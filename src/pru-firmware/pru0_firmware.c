@@ -2,6 +2,7 @@
 #include "pru0_firmware.h"
 
 int var_loc[128];
+void wait(int);
 
 /*instruction handlers*/
 
@@ -43,7 +44,7 @@ void dio_handler(int opcode, u32 inst)
 
 void wait_handler(int opcode, u32 inst)
 {
-	byte op = (GET_BYTE(inst, 2) >> 6);
+	int op = (GET_BYTE(inst, 2) >> 6);
 	int val;
 	if(op == 0){
 	/* WAIT c*/
@@ -63,7 +64,29 @@ void wait_handler(int opcode, u32 inst)
 	wait(val);
 }
 
+//this can actually be merged in wait_handler 
+//with a simple if stmnt in the fnc
+void goto_handler(int opcode, u32 inst)
+{
+        int op = (GET_BYTE(inst, 2) >> 6);
+        int val;
+        if(op == 0){
+        /* GOTO c*/
+                val = GET_BYTE(inst, 0);
+        }
 
+        else if (op == 1){
+        /* GOTO v*/
+                val = var_loc[GET_BYTE(inst, 0)];
+        }
+
+        else{
+        /* GOTO Arr[v] */
+                val = var_loc[GET_BYTE(inst,1) + GET_BYTE(inst, 0)];
+        }
+
+        inst_pointer = val;
+}
 
 static int handle_downcall(u32 id, u32 arg0, u32 arg1, u32 arg2,
 		u32 arg3, u32 arg4)
@@ -200,8 +223,7 @@ void execute_instruction()
 		single_command = 0;
 	}
 
-	int opcode = inst >> 24; //most significant byte contains the cmd
-	int pin; 
+	int opcode = inst >> 24; //most significant byte contains the cmd 
 
 	switch(opcode){
 
