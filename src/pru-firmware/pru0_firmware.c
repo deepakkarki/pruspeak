@@ -3,6 +3,68 @@
 
 int var_loc[128];
 
+/*instruction handlers*/
+
+void dio_handler(int opcode, u32 inst)
+{
+	int val1, val2;
+	if(opcode == 1){
+	/* SET DIO[c/v], c/v */
+
+		val1 = GET_BIT(inst, 23) ? var_loc[GET_BYTE(inst, 1)]: GET_BYTE(inst, 1);
+		val2 = GET_BIT(inst, 22) ? var_loc[GET_BYTE(inst, 0)]: GET_BYTE(inst, 0);
+	}
+
+	else if (opcode == 2){
+	/* SET DIO[c], arr[v] */
+		val1 = GET_BYTE(inst, 2);
+		int addr = GET_BYTE(inst, 1) + GET_BYTE(inst, 0);
+		val2 = var_loc[addr];
+	}
+
+	else {
+	/* SET DIO[v], arr[v] */
+		val1 = var_loc[GET_BYTE(inst,2)];
+		int addr = GET_BYTE(inst, 1) + GET_BYTE(inst, 0);
+		val2 = var_loc[addr];
+	}
+
+	/* set hi*/
+	if(val2 && (val1 < MAX_DIO)){ 
+        	__R30 = __R30 | ( 1 << val1);
+        }
+
+	/* set low*/
+        else{ 
+        	__R30 = __R30 & ~( 1 << val1);
+        }
+
+}
+
+void wait_handler(int opcode, u32 inst)
+{
+	byte op = (GET_BYTE(inst, 2) >> 6);
+	int val;
+	if(op == 0){
+	/* WAIT c*/
+		val = GET_BYTE(inst, 0);
+	}
+
+	else if (op == 1){
+	/* WAIT v*/
+		val = var_loc[GET_BYTE(inst, 0)];
+	}
+
+	else{
+	/* WAIT Arr[v] */
+		val = var_loc[GET_BYTE(inst,1) + GET_BYTE(inst, 0)];
+	}
+
+	wait(val);
+}
+
+
+
 static int handle_downcall(u32 id, u32 arg0, u32 arg1, u32 arg2,
 		u32 arg3, u32 arg4)
 {
@@ -52,17 +114,17 @@ static int handle_downcall(u32 id, u32 arg0, u32 arg1, u32 arg2,
 			return (is_executing | is_waiting);
 		break;
 		
-		case SYS_INST:
-		/* an single instruction has been recieved for execution */
+		case SYS_INST_32:
+		/* an single 32 bit instruction has been recieved for execution */
 			single_command = (u32)arg0;
 		break;
 		
 		default:
-			return 1; /* error case - unknown instruction in memory */
+			return 0; /* error case - unknown instruction in memory */
 		break;
 	}
 
-	return 123;
+	return 1;
 }
 
 /* make this an inline function? */
@@ -138,11 +200,29 @@ void execute_instruction()
 		single_command = 0;
 	}
 
-	int cmd = inst >> 24; //most significant byte contains the cmd
+	int opcode = inst >> 24; //most significant byte contains the cmd
 	int pin; 
 
-	switch(cmd){
+	switch(opcode){
 
+		case SET_DIO_a:
+		case SET_DIO_b:
+		case SET_DIO_c:
+			dio_handler(opcode, inst);
+		break;
+		
+		case WAIT:
+			wait_handler(opcode, inst);
+		break;
+		
+		case GOTO:
+			goto_handler(opcode, inst);
+		break;
+
+		default:
+		/*no op*/
+		break;
+/*
 		case 1:	//DIO
 			pin = inst & 0x7F; //ls 7 bits
 			if(inst & 0x80){ //high
@@ -168,6 +248,7 @@ void execute_instruction()
 		default:
 			//do nothing
 		break; 
+*/
 	}
 
 }
