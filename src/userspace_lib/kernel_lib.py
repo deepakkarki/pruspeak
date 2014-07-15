@@ -6,6 +6,8 @@ HOME		=	"/sys/devices/ocp.3/4a300000.prurproc/"
 INIT_FILE	=	HOME + "pru_speak_shm_init"
 EXEC_FILE	=	HOME + "pru_speak_execute"
 SINGLE_INST	=	HOME + "pru_speak_single_cmd"
+ABORT		=	HOME + "pru_speak_abort"
+DEBUG		=	HOME + "pru_speak_debug"
 MEM_OFF		=	None
 
 def _mem_init( ):
@@ -17,8 +19,8 @@ def _mem_init( ):
 
 def load(byte_code, trigger=False):
 	'''
-	loads the BotSpeak code into memory. 
-	byte_code is list of BS bytecode instructions
+	loads the BotSpeak *bytecode* code into memory. 
+	byte_code is list of BS *bytecode* instructions
 	'''
 	#if the shared memory is not initialized
 	if not MEM_OFF:
@@ -49,12 +51,12 @@ def execute():
 		f.write('1')
 
 
-def single_instruction(instruction):
+def single_instruction(byte_code):
 	'''
 	get the PRU to execute an single instruction
 	instruction (int/tuple containing 32bit / 2 32 bit byte-code inst) : single BotSpeak Instruction
 	'''
-	if type(inst) == tuple :
+	if type(byte_code) == tuple :
 		# **WARNING** LSB will be written in first - take note while coding kernel driver
 		to_write_low = struct.pack("<L", byte_code[0])
 		to_write_high = struct.pack("<L", byte_code[1]) #kernel still does not support 64 bit stuff
