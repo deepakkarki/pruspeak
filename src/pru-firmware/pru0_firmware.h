@@ -4,6 +4,17 @@
 
 #define MS                      0x30d40 //number of clock cycles it takes for 1ms
 
+/*max number of DIO pins*/
+#define MAX_DIO			12
+
+/*extract a byte #pos from value */
+#define GET_BYTE(val, pos) \
+	(((val) >> ((pos)*8)) & 0xFF)
+
+/* extract a bit #pos from a value */
+#define GET_BIT(val, pos) \
+	(((val) >> (pos)) & 1)
+
 /* 
 	sys calls ids
 	Different syscall values, aliases and their meaning
@@ -26,7 +37,7 @@
 #define SYS_STAT        4
 
 //a single inst cmd, to be executed next cycle.
-#define SYS_INST        5
+#define SYS_INST_32	5
 
 /* base address pointer of the instruction stream */
 u32 *shm_base = 0;
@@ -49,15 +60,15 @@ extern void sc_downcall(int (*handler)(u32 nr, u32 arg0, u32 arg1, u32 arg2, u32
 #define NOP		0
 
 /*SET RES[x], y - IO operations*/
-#define SET_DIO_a	1
-#define SET_DIO_b	2
-#define SET_DIO_c	3
-#define SET_PWM_a	4
-#define SET_PWM_b	5
-#define SET_PWM_c	6
-#define SET_AIO_a	7
-#define SET_AIO_b	8
-#define SET_AIO_c	9
+#define SET_DIO_a       1
+#define SET_DIO_b       2
+#define SET_DIO_c       3
+#define SET_PWM_a       4
+#define SET_PWM_b       5
+#define SET_PWM_c       6
+#define SET_AIO_a       7
+#define SET_AIO_b       8
+#define SET_AIO_c       9
 
 /*Variable set operations*/
 #define SET_32_a	16
