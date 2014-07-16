@@ -66,10 +66,18 @@ def execute_instruction(cmd_set):
 			else :
 				return return_values.append(-1)
 	
-		elif inst == 'DEBUG' or inst == 'ABORT'	:
-			pass
-			#not handling it now
+		elif inst == 'DEBUG':
+			with open(kernel_lib.DEBUG, "w") as f:
+				f.write("1")
 		
+		elif inst == 'ABORT':
+			with open(kernel_lib.ABORT, "w") as f:
+				f.write("1")
+		
+		elif inst == 'SYSTEM':
+			with open(kernel_lib.STATUS, "r") as f:
+				print "Is PRU running the script : ", f.read() == '1'
+	
 		#from here, it has to be non-control instruction
 		elif script_mode:
 			#incase there is an ongoing SCRIPT being defined
@@ -95,10 +103,10 @@ def execute_instruction(cmd_set):
 	
 if __name__ == '__main__':
 	s = '''
-	SET var1, 1
+	SET arr1[0], 1
 	SET var2, 0
 	SCRIPT 
-		SET DIO[0] , var1
+		SET DIO[0] , arr1[0]
 		WAIT 1
 		SET DIO[0], var2
 		WAIT 1
@@ -108,5 +116,5 @@ if __name__ == '__main__':
 		'''
 		
 	print str_to_list(s)
-	res = execute_instruction(["SET var2, 1"])
+	res = execute_instruction(["SET arr1[var2], var2"])
 	print res
