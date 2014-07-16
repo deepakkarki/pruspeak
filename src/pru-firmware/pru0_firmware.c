@@ -66,14 +66,15 @@ void set_handler(int opcode, u32 inst)
 
 		//if op == 1, operand1 is a variable; else it is a Arr[v] type
 		val1 = (op == 1) ? GET_BYTE(inst, 0): (GET_BYTE(inst,1) + GET_BYTE(inst, 0));
-		
+		u32 old_inst = inst;
+
 		//get the next 32 bits of the inst
 		PRUCFG_SYSCFG = PRUCFG_SYSCFG & (~SYSCFG_STANDBY_INIT); /*enable gloabl access*/
                 inst = *(shm_base + inst_pointer);
                 PRUCFG_SYSCFG = PRUCFG_SYSCFG | SYSCFG_STANDBY_INIT;
                 inst_pointer++;
 		
-		op = ((GET_BYTE(inst, 2) >> 4) & 3); //get bits 4 and 5 of byte2
+		op = ((GET_BYTE(old_inst, 2) >> 4) & 3); //get bits 4 and 5 of byte2
 
 		if (op == 0){
 		//operand2 is of type C
@@ -101,7 +102,7 @@ void wait_handler(int opcode, u32 inst)
 	int val;
 	if(op == 0){
 	/* WAIT c*/
-		val = GET_BYTE(inst, 0);
+		val = inst & 0xFFFF;
 	}
 
 	else if (op == 1){
@@ -125,7 +126,7 @@ void goto_handler(int opcode, u32 inst)
         int val;
         if(op == 0){
         /* GOTO c*/
-                val = GET_BYTE(inst, 0);
+                val = inst & 0xFFFF;
         }
 
         else if (op == 1){
@@ -139,6 +140,124 @@ void goto_handler(int opcode, u32 inst)
         }
 
         inst_pointer = val;
+}
+
+void if_handler(int opcode, u32 inst)
+{
+	/* IF (a <cond> b) GOTO c 
+		a => C/V/Arr[V] (byte1, byte0)
+		b => C/V/Arr[V] (byte5, byte4)
+		c => C/V/Arr[V] (byte7, byte6)
+	*/
+	int val1, val2, val3;
+	int op = GET_BYTE(inst, 2) >> 6;
+	int rel_op, res;
+	
+	rel_op = opcode & 0x0F;
+
+	if(op == 0){
+	/* operand1 is of type C */
+		val1 = GET_BYTE(inst, 0);
+	}
+
+	else if(op == 1){
+	/* operand1 is of type V */
+		val1 = var_loc[GET_BYTE(inst, 0)];
+	}
+
+	else{
+	/* operand1 is of type Arr[v] */
+		val1 = var_loc[GET_BYTE(inst, 1) + GET_BYTE(inst, 0)];
+	}
+
+	u32 old_inst = inst; //old_inst is the 1st 32 bits of the inst.
+	
+	//get the next 32 bits of the inst
+	PRUCFG_SYSCFG = PRUCFG_SYSCFG & (~SYSCFG_STANDBY_INIT); /*enable gloabl access*/
+	inst = *(shm_base + inst_pointer);
+	PRUCFG_SYSCFG = PRUCFG_SYSCFG | SYSCFG_STANDBY_INIT;
+	inst_pointer++;
+	
+	/*** GET val2 from second part of the inst ***/
+
+        op = (GET_BYTE(old_inst, 2) >> 4) & 3;
+
+        if(op == 0){
+        /* operand2 is of type C */
+                val2 = GET_BYTE(inst, 0);
+        }
+
+        else if(op == 1){
+        /* operand2 is of type V */
+                val2 = var_loc[GET_BYTE(inst, 0)];
+        }
+
+        else{
+        /* operand2 is of type Arr[v] */
+                val2 = var_loc[GET_BYTE(inst, 1) + GET_BYTE(inst, 0)];
+        }
+
+        /*** GET val3 from second part of the inst ***/
+
+        op = (GET_BYTE(old_inst, 2) >> 2) & 3;
+
+        if(op == 0){
+        /* operand3 is of type C */
+                val3 = GET_BYTE(inst, 2);
+        }
+
+        else if(op == 1){
+        /* operand3 is of type V */
+                val3 = var_loc[GET_BYTE(inst, 2)];
+        }
+
+        else{
+        /* operand3 is of type Arr[v] */
+                val3 = var_loc[GET_BYTE(inst, 3) + GET_BYTE(inst, 2)];
+        }
+	
+	/* calculate the result based on rel_op 
+		==	0
+		!=	1
+		>=	2
+		<=	3
+		>	4
+		<	5
+	*/
+	switch(rel_op){
+		case 0:
+			res = (val1 == val2);
+		break;
+
+                case 1:
+                        res = (val1 != val2);
+                break;
+
+                case 2:
+                        res = (val1 >= val2);
+                break;
+
+                case 3:
+                        res = (val1 <= val2);
+                break;
+
+                case 4:
+                        res = (val1 > val2);
+                break;
+
+                case 5:
+                        res = (val1 < val2);
+                break;
+
+		default:
+			res = 0;
+		break;
+	}
+
+	if(res){
+		inst_pointer = val3;
+	}
+
 }
 
 static int handle_downcall(u32 id, u32 arg0, u32 arg1, u32 arg2,
@@ -157,6 +276,7 @@ static int handle_downcall(u32 id, u32 arg0, u32 arg1, u32 arg2,
 
 		case SYS_INIT:
 			is_executing = 0;
+			is_waiting = false;
 			PRUCFG_SYSCFG = PRUCFG_SYSCFG & (~SYSCFG_STANDBY_INIT); /*enable gloabl access*/
 			shm_base = (u32 *)arg0;
 			*shm_base = arg1 * arg1; /*for test purposes - checked by kernel*/
@@ -299,10 +419,20 @@ void execute_instruction()
 		case GOTO:
 			goto_handler(opcode, inst);
 		break;
-
+		
+		case IF_EQ:
+		case IF_NEQ:
+		case IF_GTE:
+		case IF_LTE:
+		case IF_GT:
+		case IF_LT:
+			if_handler(opcode, inst);
+		break;
+		
 		default:
 		/*no op*/
 		break;
+		
 /*
 		case 1:	//DIO
 			pin = inst & 0x7F; //ls 7 bits
