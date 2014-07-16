@@ -48,7 +48,7 @@ def pack_byte(b3, b2, b1, b0):
 	takes 4 bytes and packs it into an integer
 	'''
 	if len (filter(lambda x : x < 256, (b3, b2, b1, b0))) < 4:
-		print "error - param > 256"
+		print "error - param > 256 ", b3,b2,b1,b0
 		return 0
 		
 	return b3 << 3*8 | b2 << 2*8 | b1 << 1*8 | b0
@@ -160,7 +160,8 @@ def byte_code_set(val1, val2):
 			if val2.type == 'INT':
 			#y is a Const
 				byte2 |= 0b00 << 4
-				byte4 = val2.val
+				byte4 = val2.val & 0xFF
+				byte5 = (val2.val >> 8) & 0xFF
 			
 			elif val2.any_var:
 			#y is a var
@@ -211,7 +212,8 @@ def byte_code_set(val1, val2):
 		
 		if val2.type == "INT": 
 		#type1 : SET x, y; y is a constant
-			byte0 = val2.val #byte0 16 bits since byte1 is unoccupied in this case
+			byte0 = val2.val & 0xFF #low 8 bits
+			byte1 = (val2.val >> 8) & 0xFF #high 8 bits
 			
 		else: 
 		#type2 : SET x, y; y is a variable
@@ -250,7 +252,10 @@ def byte_code_single_op(cmd, val):
 	if val.type == 'INT':
 	#case1 INT
 		byte2 = 0
-		byte0 = val.val
+		byte0 = val.val & 0xFF #lower 8 bits
+		print "Byte 0 :", bin(byte0)
+		byte1 = (val.val >> 8) & 0xFF #higher 8 bits
+		print "Byte 1 :", bin(byte1)
 		
 	elif val.any_var:
 	#Var or Arr[Var]
@@ -490,7 +495,7 @@ def byte_code_arithmetic(cmd, val1, val2):
 def byte_code_ctrl(val):
 	'''
 	stuff like SCRIPT, ENDSCRIPT,
-	RUN, ABORT, DEBUG, etc.
+	RUN, ABORT, DEBUG, SYSTEM etc.
 	'''
 	return val
 
@@ -618,7 +623,7 @@ def p_inst_HALT(p):
 
 def p_val_INT(p):
 	'''val : INT'''
-	#print p[1]
+	print p[1]
 	p[0] = Value('INT', p[1])
 
 def p_val_VAR(p):
