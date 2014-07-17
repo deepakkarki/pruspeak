@@ -36,14 +36,20 @@
 //returns the status of whether a script is executing
 #define SYS_STAT        4
 
-//a single inst cmd, to be executed next cycle.
+//a single inst cmd, 32 bit, to be executed next cycle.
 #define SYS_INST_32	5
+
+//a single inst cmd, 64 bit, to be executed next cycle.
+#define SYS_INST_64	6
 
 /* base address pointer of the instruction stream */
 u32 *shm_base = 0;
 
 /* the compiled 32 bit instruction */
 u32 single_command = 0;
+
+/* 2nd word of the compiled 64 bit instruction */
+u32 single_command_2 = 0;
 
 /* pointer to current instruction in terms of offset */
 int inst_pointer = 0;

@@ -4,6 +4,27 @@
 int var_loc[128];
 void wait(int);
 
+/* to fetch 2nd part of 64 bit instruction */
+static u32 get_second_word()
+{
+	u32 inst;
+	
+	/* when the 64 bit inst is part of the script */
+	if(!single_command){
+		PRUCFG_SYSCFG = PRUCFG_SYSCFG & (~SYSCFG_STANDBY_INIT); /*enable gloabl access*/
+		inst = *(shm_base + inst_pointer);
+		PRUCFG_SYSCFG = PRUCFG_SYSCFG | SYSCFG_STANDBY_INIT;
+		inst_pointer++;
+	}
+
+	/* when the 64 bit inst is a single_inst */
+	else {
+		inst = single_command_2;
+	}
+	
+	return inst;
+}
+
 /*instruction handlers*/
 
 void dio_handler(int opcode, u32 inst)
@@ -69,10 +90,7 @@ void set_handler(int opcode, u32 inst)
 		u32 old_inst = inst;
 
 		//get the next 32 bits of the inst
-		PRUCFG_SYSCFG = PRUCFG_SYSCFG & (~SYSCFG_STANDBY_INIT); /*enable gloabl access*/
-                inst = *(shm_base + inst_pointer);
-                PRUCFG_SYSCFG = PRUCFG_SYSCFG | SYSCFG_STANDBY_INIT;
-                inst_pointer++;
+		inst = get_second_word();
 		
 		op = ((GET_BYTE(old_inst, 2) >> 4) & 3); //get bits 4 and 5 of byte2
 
@@ -174,10 +192,7 @@ void if_handler(int opcode, u32 inst)
 	u32 old_inst = inst; //old_inst is the 1st 32 bits of the inst.
 	
 	//get the next 32 bits of the inst
-	PRUCFG_SYSCFG = PRUCFG_SYSCFG & (~SYSCFG_STANDBY_INIT); /*enable gloabl access*/
-	inst = *(shm_base + inst_pointer);
-	PRUCFG_SYSCFG = PRUCFG_SYSCFG | SYSCFG_STANDBY_INIT;
-	inst_pointer++;
+	inst = get_second_word();
 	
 	/*** GET val2 from second part of the inst ***/
 
@@ -301,10 +316,7 @@ void math_handler(int opcode, u32 inst)
 		u32 old_inst = inst; //old_inst is the 1st 32 bits of the inst.
 
 	        //get the next 32 bits of the inst
-	        PRUCFG_SYSCFG = PRUCFG_SYSCFG & (~SYSCFG_STANDBY_INIT); /*enable gloabl access*/
-	        inst = *(shm_base + inst_pointer);
-	        PRUCFG_SYSCFG = PRUCFG_SYSCFG | SYSCFG_STANDBY_INIT;
-	        inst_pointer++;
+	        inst = get_second_word();
 	
 	        /*** GET val2 from second part of the inst ***/
 	
@@ -402,6 +414,13 @@ static int handle_downcall(u32 id, u32 arg0, u32 arg1, u32 arg2,
 			single_command = (u32)arg0;
 		break;
 		
+		case SYS_INST_64:
+		/* an single 32 bit instruction has been recieved for execution */
+			single_command = (u32)arg0;
+			single_command_2 = (u32)arg1; //2nd word for 64 bit inst
+			//bad naming convention - alexanderhiam is not going to be happy
+		break;
+		
 		default:
 			return 0; /* error case - unknown instruction in memory */
 		break;
@@ -480,7 +499,6 @@ void execute_instruction()
 
 	else {
 		inst = single_command;
-		single_command = 0;
 	}
 
 	int opcode = inst >> 24; //most significant byte contains the cmd 
@@ -526,36 +544,10 @@ void execute_instruction()
 		default:
 		/*no op*/
 		break;
-		
-/*
-		case 1:	//DIO
-			pin = inst & 0x7F; //ls 7 bits
-			if(inst & 0x80){ //high
-				__R30 = __R30 | ( 1 << pin);
-			}
-			else{ //low
-				__R30 = __R30 & ~( 1 << pin);
-			}
-		break;
 
-		case 2:
-			wait(inst & 0x00FFFFFF);
-			//__delay_cycles(0xbebc200);
-		break;
-
-		case 3:
-			//jump
-			inst_pointer = inst & 0xFFFF;
-			//max 16 bits of address space for any PRU script
-			//directly jump to ls 16 bits.
-		break;
-
-		default:
-			//do nothing
-		break; 
-*/
 	}
-
+	
+	single_command = 0; /*incase there was a single command executed this time, set to zero*/
 }
 
 void timer_init()

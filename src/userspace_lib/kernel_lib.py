@@ -6,6 +6,7 @@ HOME		=	"/sys/devices/ocp.3/4a300000.prurproc/"
 INIT_FILE	=	HOME + "pru_speak_shm_init"
 EXEC_FILE	=	HOME + "pru_speak_execute"
 SINGLE_INST	=	HOME + "pru_speak_single_cmd"
+SINGLE_INST	=	HOME + "pru_speak_single_cmd_64"
 ABORT		=	HOME + "pru_speak_abort"
 DEBUG		=	HOME + "pru_speak_debug"
 MEM_OFF		=	None
@@ -61,7 +62,7 @@ def single_instruction(byte_code):
 		to_write_low = struct.pack("<L", byte_code[0])
 		to_write_high = struct.pack("<L", byte_code[1]) #kernel still does not support 64 bit stuff
 
-		with open(SINGLE_INST, "w") as f:
+		with open(SINGLE_INST_64, "w") as f:
 			f.write(to_write_low + to_write_high)
 			
 	else :

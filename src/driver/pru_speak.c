@@ -1588,7 +1588,7 @@ static ssize_t pru_speak_status0(struct device *dev, struct device_attribute *at
  * syscall #5 - ask PRU to execute single BS instruction
  *		The Byte code of the BS instruction to be executed is written
  *		to this file.
- *		return value of downcall = 123 if OK, else value = 1
+ *		return value of downcall = 4 if OK, else value = ?
  */
 
 static ssize_t pru_speak_single_cmd(int idx, struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
@@ -1600,7 +1600,7 @@ static ssize_t pru_speak_single_cmd(int idx, struct device *dev, struct device_a
         if (count ==  0)
                 return -1;
 
-	//buf[0] = LSB; buf[4] = MSB
+	//buf[0] = LSB; buf[3] = MSB
 	//the for loop packs the 4 incoming character into a 1 word long integer 
 	//viz one botspeak instruction (byte code)
 	for(i = 0; i < 4; i++){
@@ -1620,18 +1620,53 @@ static ssize_t pru_speak_single_cmd0(struct device *dev, struct device_attribute
         return pru_speak_single_cmd(0, dev, attr, buf, count);
 }
 
+/*
+ * syscall #6 - ask PRU to execute single 64 bit BS instruction
+ *		The Byte code of the BS instruction to be executed is written
+ *		to this file.
+ *		return value of downcall = 8 if OK, else value = ?
+ */
+
+static ssize_t pru_speak_single_cmd_64(int idx, struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+        struct platform_device *pdev = to_platform_device(dev);
+        struct pruproc *pp = platform_get_drvdata(pdev);
+        int inst_a = 0, ret, i;
+        int inst_b = 0;
+
+	//buf[0] = LSB; buf[3] = MSB : for 1st word
+	//buf[4] = LSB; buf[7] = MSB : for 2nd word
+	//the for loop packs the 8 incoming character into two, 1 word long integers
+	//viz one botspeak instruction (byte code)
+	for(i = 0; i < 4; i++){
+		inst_a |= ((int)buf[i]) << i*8;
+	}
+
+	for(i = 4; i < 8; i++){
+		inst_b |= ((int)buf[i]) << i*8;
+	}
+	
+        ret = pru_downcall_idx(pp, idx, 6, inst_a, inst_b, 0, 0, 0);/*pp, idx, syscall_id, 5 args*/
+
+        printk( KERN_INFO "write to pru_speak_single_cmd_64. return value of downcall : %d\n", ret);
+	return 8; //quick hack
+}
+
+static ssize_t pru_speak_single_cmd0_64(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+        return pru_speak_single_cmd_64(0, dev, attr, buf, count);
+}
+
 static DEVICE_ATTR(load, S_IWUSR, NULL, pruproc_store_load);
 static DEVICE_ATTR(reset, S_IWUSR, NULL, pruproc_store_reset);
-/*
-static DEVICE_ATTR(downcall0, S_IWUSR, NULL, pruproc_store_downcall0);
-static DEVICE_ATTR(downcall1, S_IWUSR, NULL, pruproc_store_downcall1);
-*/
 static DEVICE_ATTR(pru_speak_debug, S_IWUSR, NULL, pru_speak_debug0);
 static DEVICE_ATTR(pru_speak_shm_init, S_IWUSR | S_IRUGO, pru_speak_shm_init0, NULL);
 static DEVICE_ATTR(pru_speak_execute, S_IWUSR, NULL, pru_speak_execute0);
 static DEVICE_ATTR(pru_speak_abort, S_IWUSR, NULL, pru_speak_abort0);
 static DEVICE_ATTR(pru_speak_status, S_IRUGO, pru_speak_status0, NULL);
 static DEVICE_ATTR(pru_speak_single_cmd, S_IWUSR, NULL, pru_speak_single_cmd0);
+static DEVICE_ATTR(pru_speak_single_cmd_64, S_IWUSR, NULL, pru_speak_single_cmd0_64);
+
 /*
  *
  *	BIN FILE SYSFS - for mmap'ing. share mem b/w userspace, kernel and PRU
@@ -1704,6 +1739,7 @@ static int pruproc_remove(struct platform_device *pdev)
 	device_remove_file(dev, &dev_attr_pru_speak_abort);
 	device_remove_file(dev, &dev_attr_pru_speak_status);
 	device_remove_file(dev, &dev_attr_pru_speak_single_cmd);
+	device_remove_file(dev, &dev_attr_pru_speak_single_cmd_64);
 	//sysfs_remove_bin_file( (&dev->kobj), &pru_speak_bin_attr);
 	
 	
@@ -3265,6 +3301,12 @@ static int pruproc_probe(struct platform_device *pdev)
         }
 
         err = device_create_file(dev, &dev_attr_pru_speak_single_cmd);
+        if (err != 0) {
+                dev_err(dev, "device_create_file failed\n");
+                goto err_fail;
+        }
+
+	err = device_create_file(dev, &dev_attr_pru_speak_single_cmd_64);
         if (err != 0) {
                 dev_err(dev, "device_create_file failed\n");
                 goto err_fail;
