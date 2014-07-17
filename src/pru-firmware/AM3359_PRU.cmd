@@ -16,7 +16,7 @@
 MEMORY
 {
     PAGE 0:
-      PRUIMEM:   o = 0x00000000  l = 0x00001000  /* 8kB PRU0 Instruction RAM */
+      PRUIMEM:   o = 0x00000000  l = 0x00002000  /* 8kB PRU0 Instruction RAM */
     PAGE 1:
       PRUDMEM:   o = 0x00000000  l = 0x00001000  /* 8kB PRU Data RAM 0 */
       C0: o = 0x00020000 l = 0x00000300 CREGISTER=0

@@ -260,6 +260,91 @@ void if_handler(int opcode, u32 inst)
 
 }
 
+/* handler for all inst like ADD, SUB, AND, OR*/
+void math_handler(int opcode, u32 inst)
+{
+	int val1, val2, res;
+	int addr; //address of var to modify
+	if(opcode % 2 == 0){
+	/* 32 bit inst */
+		//val1 = GET_BIT(inst, 23) ? var_loc[GET_BYTE(inst, 1)]: GET_BYTE(inst, 1);
+		addr = GET_BYTE(inst,1);
+		val1 = var_loc[addr]; //val1 can't be const
+		val2 = GET_BIT(inst, 22) ? var_loc[GET_BYTE(inst, 0)]: GET_BYTE(inst, 0);	
+	}
+	
+	else{
+	/* 64 bit inst */
+		//TODO the following should be abstracted away into a fn 
+		//since all 64 bit inst have the same operator placement, common fn to extract all values
+
+		int op = GET_BYTE(inst, 2) >> 6;
+
+		if(op == 0){//XXX : this case is not possible 
+        	/* operand1 is of type C */
+                	val1 = GET_BYTE(inst, 0);
+        	}
+	
+	        else if(op == 1){
+	        /* operand1 is of type V */
+			addr = GET_BYTE(inst,0);
+	                val1 = var_loc[addr];
+	        }
+	
+	        else{
+	        /* operand1 is of type Arr[v] */
+			addr = GET_BYTE(inst, 1) + GET_BYTE(inst, 0);
+	                val1 = var_loc[addr];
+	        }	
+		
+		u32 old_inst = inst; //old_inst is the 1st 32 bits of the inst.
+
+	        //get the next 32 bits of the inst
+	        PRUCFG_SYSCFG = PRUCFG_SYSCFG & (~SYSCFG_STANDBY_INIT); /*enable gloabl access*/
+	        inst = *(shm_base + inst_pointer);
+	        PRUCFG_SYSCFG = PRUCFG_SYSCFG | SYSCFG_STANDBY_INIT;
+	        inst_pointer++;
+	
+	        /*** GET val2 from second part of the inst ***/
+	
+	        op = (GET_BYTE(old_inst, 2) >> 4) & 3;
+	
+       		if(op == 0){
+	        /* operand2 is of type C */
+	                val2 = GET_BYTE(inst, 0);
+	        }
+	
+	        else if(op == 1){
+	        /* operand2 is of type V */
+	                val2 = var_loc[GET_BYTE(inst, 0)];
+	        }
+	
+	        else{
+	        /* operand2 is of type Arr[v] */
+	                val2 = var_loc[GET_BYTE(inst, 1) + GET_BYTE(inst, 0)];
+	        }
+	}
+	
+	switch(opcode){
+		case ADD_32:
+		case ADD_64:
+			res = val1 + val2;
+		break;
+
+		case SUB_32:
+		case SUB_64:
+			res = val1 - val2;
+		break;
+
+		default:
+			res = val1;
+		break;
+	}
+
+	var_loc[addr] = res;
+	//return_to_userspace(res);
+}
+
 static int handle_downcall(u32 id, u32 arg0, u32 arg1, u32 arg2,
 		u32 arg3, u32 arg4)
 {
@@ -429,6 +514,13 @@ void execute_instruction()
 			if_handler(opcode, inst);
 		break;
 		
+		case ADD_32:
+		case ADD_64:
+		case SUB_32:
+		case SUB_64:
+			math_handler(opcode, inst);
+		break;
+
 		default:
 		/*no op*/
 		break;
