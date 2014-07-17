@@ -19,14 +19,14 @@ void dio_handler(int opcode, u32 inst)
 	else if (opcode == SET_DIO_b){
 	/* SET DIO[c], arr[v] */
 		val1 = GET_BYTE(inst, 2);
-		int addr = GET_BYTE(inst, 1) + GET_BYTE(inst, 0);
+		int addr = GET_BYTE(inst, 1) + var_loc[GET_BYTE(inst, 0)];
 		val2 = var_loc[addr];
 	}
 
 	else {
 	/* SET DIO[v], arr[v] */
 		val1 = var_loc[GET_BYTE(inst,2)];
-		int addr = GET_BYTE(inst, 1) + GET_BYTE(inst, 0);
+		int addr = GET_BYTE(inst, 1) + var_loc[GET_BYTE(inst, 0)];
 		val2 = var_loc[addr];
 	}
 
@@ -44,20 +44,20 @@ void dio_handler(int opcode, u32 inst)
 
 void set_handler(int opcode, u32 inst)
 {
-	int val1, val2;
+	int val1, val2, addr1, addr2;
 
 	if(opcode == SET_32_a){
 	/* SET V, C */
-		val1 = GET_BYTE(inst,2);
+		addr1 = GET_BYTE(inst,2);
 		val2 = inst & 0xffff; //16 bit constant
-		var_loc[val1] = val2;
+		var_loc[addr1] = val2;
 	}
 
 	else if(opcode == SET_32_b){
 	/* SET V, V */
-		val1 = GET_BYTE(inst,2);
-		val2 = GET_BYTE(inst,0);
-		var_loc[val1] = var_loc[val2];
+		addr1 = GET_BYTE(inst,2);
+		addr2 = GET_BYTE(inst,0);
+		var_loc[addr1] = var_loc[addr2];
 	}
 
 	else{
@@ -65,7 +65,7 @@ void set_handler(int opcode, u32 inst)
 		int op = GET_BYTE(inst, 2) >> 6;
 
 		//if op == 1, operand1 is a variable; else it is a Arr[v] type
-		val1 = (op == 1) ? GET_BYTE(inst, 0): (GET_BYTE(inst,1) + GET_BYTE(inst, 0));
+		addr1 = (op == 1) ? GET_BYTE(inst, 0): (GET_BYTE(inst,1) + var_loc[GET_BYTE(inst, 0)]);
 		u32 old_inst = inst;
 
 		//get the next 32 bits of the inst
@@ -79,19 +79,19 @@ void set_handler(int opcode, u32 inst)
 		if (op == 0){
 		//operand2 is of type C
 			val2 = inst & 0xFF;
-			var_loc[val1] = val2;
+			var_loc[addr1] = val2;
 		}
 
 		if (op == 1){
 		//operand2 is of type V
-			val2 = GET_BYTE(inst,0);
-			var_loc[val1] = var_loc[val2];
+			addr2 = GET_BYTE(inst,0);
+			var_loc[addr1] = var_loc[addr2];
 		}
 
 		else{
 		//second operand is of type Arr[v]
-			val2 = GET_BYTE(inst, 1) + GET_BYTE(inst, 0);
-			var_loc[val1] = var_loc[val2];
+			addr2 = GET_BYTE(inst, 1) + var_loc[GET_BYTE(inst, 0)];
+			var_loc[addr1] = var_loc[addr2];
 		}
 	}
 }
@@ -112,7 +112,7 @@ void wait_handler(int opcode, u32 inst)
 
 	else{
 	/* WAIT Arr[v] */
-		val = var_loc[GET_BYTE(inst,1) + GET_BYTE(inst, 0)];
+		val = var_loc[GET_BYTE(inst,1) + var_loc[GET_BYTE(inst, 0)]];
 	}
 
 	wait(val);
@@ -136,12 +136,13 @@ void goto_handler(int opcode, u32 inst)
 
         else{
         /* GOTO Arr[v] */
-                val = var_loc[GET_BYTE(inst,1) + GET_BYTE(inst, 0)];
+                val = var_loc[GET_BYTE(inst,1) + var_loc[GET_BYTE(inst, 0)]];
         }
 
         inst_pointer = val;
 }
 
+#if 1
 void if_handler(int opcode, u32 inst)
 {
 	/* IF (a <cond> b) GOTO c 
@@ -167,7 +168,7 @@ void if_handler(int opcode, u32 inst)
 
 	else{
 	/* operand1 is of type Arr[v] */
-		val1 = var_loc[GET_BYTE(inst, 1) + GET_BYTE(inst, 0)];
+		val1 = var_loc[GET_BYTE(inst, 1) + var_loc[GET_BYTE(inst, 0)]];
 	}
 
 	u32 old_inst = inst; //old_inst is the 1st 32 bits of the inst.
@@ -194,7 +195,7 @@ void if_handler(int opcode, u32 inst)
 
         else{
         /* operand2 is of type Arr[v] */
-                val2 = var_loc[GET_BYTE(inst, 1) + GET_BYTE(inst, 0)];
+                val2 = var_loc[GET_BYTE(inst, 1) + var_loc[GET_BYTE(inst, 0)]];
         }
 
         /*** GET val3 from second part of the inst ***/
@@ -213,7 +214,7 @@ void if_handler(int opcode, u32 inst)
 
         else{
         /* operand3 is of type Arr[v] */
-                val3 = var_loc[GET_BYTE(inst, 3) + GET_BYTE(inst, 2)];
+                val3 = var_loc[GET_BYTE(inst, 3) + var_loc[GET_BYTE(inst, 2)]];
         }
 	
 	/* calculate the result based on rel_op 
@@ -293,7 +294,7 @@ void math_handler(int opcode, u32 inst)
 	
 	        else{
 	        /* operand1 is of type Arr[v] */
-			addr = GET_BYTE(inst, 1) + GET_BYTE(inst, 0);
+			addr = GET_BYTE(inst, 1) + var_loc[GET_BYTE(inst, 0)];
 	                val1 = var_loc[addr];
 	        }	
 		
@@ -321,7 +322,7 @@ void math_handler(int opcode, u32 inst)
 	
 	        else{
 	        /* operand2 is of type Arr[v] */
-	                val2 = var_loc[GET_BYTE(inst, 1) + GET_BYTE(inst, 0)];
+	                val2 = var_loc[GET_BYTE(inst, 1) + var_loc[GET_BYTE(inst, 0)]];
 	        }
 	}
 	
@@ -344,6 +345,7 @@ void math_handler(int opcode, u32 inst)
 	var_loc[addr] = res;
 	//return_to_userspace(res);
 }
+#endif
 
 static int handle_downcall(u32 id, u32 arg0, u32 arg1, u32 arg2,
 		u32 arg3, u32 arg4)
@@ -520,7 +522,7 @@ void execute_instruction()
 		case SUB_64:
 			math_handler(opcode, inst);
 		break;
-
+		
 		default:
 		/*no op*/
 		break;
