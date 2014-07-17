@@ -290,8 +290,8 @@ def byte_code_if(val1, val2, cond, goto):
 				'!='	: 0b0001,
 				'>='	: 0b0010,
 				'<='	: 0b0011,
-				'<'	: 0b0100,
-				'>'	: 0b0101
+				'>'	: 0b0100,
+				'<'	: 0b0101
 	}
 	OPCODE = 0b0010 << 4
 	OPCODE |= cond_code[cond]
