@@ -103,18 +103,20 @@ def execute_instruction(cmd_set):
 	
 if __name__ == '__main__':
 	s = '''
-	SET arr1[0], 1
 	SET var2, 0
-	SCRIPT 
+	SET var3, 1
+	SET arr1[0], 1
+	SET arr1[1], 0
+	SCRIPT
 		SET DIO[0] , arr1[0]
-		WAIT 1
-		SET DIO[0], var2
-		WAIT 1
-		GOTO 0
+		WAIT 1000
+		SET DIO[0] , arr1[1]
+		WAIT 1000
+		IF (arr1[var2] > arr1[var3]) GOTO arr1[var3]
 	ENDSCRIPT
 	RUN
-		'''
+	'''
 		
 	print str_to_list(s)
-	res = execute_instruction(["SET arr1[var2], var2"])
+	res = execute_instruction(["SET arr1[var2], 0"])
 	print res
