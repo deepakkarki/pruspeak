@@ -43,7 +43,13 @@
 #define SYS_INST_64	6
 
 /* base address pointer of the instruction stream */
-u32 *shm_base = 0;
+u32 *shm_code = 0;
+
+/* base address pointer of the return value stream */
+u32 *shm_ret = 0;
+
+/* offset (from shm_ret) to current return value loc*/
+int ret_pointer = 1;
 
 /* the compiled 32 bit instruction */
 u32 single_command = 0;

@@ -10,13 +10,6 @@ import kernel_lib
 script_mode = False
 script_code = []
 
-def _get_return_value():
-	'''
-	gets the return value of the last executed instruction
-	'''
-	return 1 #for now. (I think this should be moved to kernel lib, though)
-	
-	
 def str_to_list(code):
 	'''
 	converts a string of BS inst into a list
@@ -95,8 +88,8 @@ def execute_instruction(cmd_set):
 		else:
 			#case of normal instruction
 			byte_code = parser.parse(inst)
-			kernel_lib.single_instruction(byte_code)
-			return_values.append(_get_return_value())
+			ret = kernel_lib.single_instruction(byte_code)
+			return_values.append(ret)
 			#byte_code = parser.parse(inst)
 		
 	return return_values
@@ -118,5 +111,5 @@ if __name__ == '__main__':
 	'''
 		
 	print str_to_list(s)
-	res = execute_instruction(["SET arr1[var2], 0"])
+	res = execute_instruction(["SET var1, 50","SET var2, 150","GET var1","GET var2", "GET var2", "GET var2", "GET var2"])
 	print res

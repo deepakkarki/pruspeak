@@ -9,13 +9,18 @@ SINGLE_INST	=	HOME + "pru_speak_single_cmd"
 SINGLE_INST_64	=	HOME + "pru_speak_single_cmd_64"
 ABORT		=	HOME + "pru_speak_abort"
 DEBUG		=	HOME + "pru_speak_debug"
-MEM_OFF		=	None
+CODE_MEM_OFF	=	None
+RET_MEM_OFF	=	None	#base address for ret value shm
+ret_counter	=	1	#like a top of stack pointer
 
 def _mem_init( ):
 	#read the starting address (physical) of shared memory, also pass it on to the PRU (via downcall)
-	global MEM_OFF
+	global CODE_MEM_OFF, RET_MEM_OFF
+
 	with open(INIT_FILE) as f:
-		MEM_OFF = int(f.read(), 16) 
+		code, ret = f.read().split(',')
+		CODE_MEM_OFF = int(code, 16)
+		RET_MEM_OFF  = int(ret, 16)
 
 
 def load(byte_code, trigger=False):
@@ -24,20 +29,20 @@ def load(byte_code, trigger=False):
 	byte_code is list of BS *bytecode* instructions
 	'''
 	#if the shared memory is not initialized
-	if not MEM_OFF:
+	if not (CODE_MEM_OFF and RET_MEM_OFF):
 		_mem_init()
 
 	#open /dev/mem and mmap it to access the physical memory through our virtual space.
 	with open("/dev/mem", "r+b" ) as f:
 	
-		mem = mmap(f.fileno(), PAGE_SIZE, offset=MEM_OFF)
+		code_shm = mmap(f.fileno(), PAGE_SIZE, offset=CODE_MEM_OFF)
 		#var mem contains the map if successful
 		
 		code_offset	=	0
 		
 		#write every 32 bit byte-code into the shared memory 
 		for inst in byte_code:
-			mem[code_offset : code_offset + 4] = struct.pack("<L", inst)
+			code_shm[code_offset : code_offset + 4] = struct.pack("<L", inst)
 			code_offset += 4
 			
 	if trigger :
@@ -50,6 +55,34 @@ def execute():
 	'''
 	with open(EXEC_FILE, "w") as f:
 		f.write('1')
+
+def _get_return_value():
+        '''
+        gets the return value of the last executed instruction
+        '''
+	global ret_counter
+
+        if not RET_MEM_OFF:
+		_mem_init()
+
+	ret_value = 0
+
+	with open("/dev/mem", "r+b") as f:
+		ret_shm = mmap(f.fileno(), PAGE_SIZE, offset=RET_MEM_OFF)
+		tos = ret_shm[0:4]
+		tos = struct.unpack("<L", tos)[0]
+
+		while ret_counter == tos :
+			pass
+			#wait till PRU gives a return value
+
+		ret_value = ret_shm[ret_counter*4 : (ret_counter*4)+4]
+		print "Type of ret_value : ", type(ret_value)
+		ret_value = struct.unpack("<L", ret_value)[0]
+		print "Type of ret_value : ", type(ret_value), " value : ", ret_value
+		ret_counter = (ret_counter % 1023) + 1
+
+	return ret_value 
 
 
 def single_instruction(byte_code):
@@ -70,5 +103,7 @@ def single_instruction(byte_code):
 
 		with open(SINGLE_INST, "w") as f:
 			f.write(to_write)
+
+	return _get_return_value()
 
 		

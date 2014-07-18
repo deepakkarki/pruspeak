@@ -4,6 +4,29 @@
 int var_loc[128];
 void wait(int);
 
+static void send_ret_value(int val)
+{
+	//TODO : handle multiple params?
+
+	/*enable gloabl access*/
+	PRUCFG_SYSCFG = PRUCFG_SYSCFG & (~SYSCFG_STANDBY_INIT); 
+
+	/* write val to the loc pointed to by current ret_pointer */
+	*(shm_ret + ret_pointer) = val;
+
+	/*inc the ret_pointer to point to the next empty loc*/
+	ret_pointer = (ret_pointer % 1023) + 1; 
+	//max buffer space is 4096 => 1023 (free)words.
+
+	/*inc the num_ret_value*/
+	*shm_ret = ret_pointer; //ret_pointer is like a stack pointer, 
+		//userspace will read this value to figure out till where the buffer has been filled
+		//e.g. if the ret_pointer = 10; ARM will read 9 slots uptill 10
+
+	PRUCFG_SYSCFG = PRUCFG_SYSCFG | SYSCFG_STANDBY_INIT;
+	inst_pointer++;
+}
+
 /* to fetch 2nd part of 64 bit instruction */
 static u32 get_second_word()
 {
@@ -12,7 +35,7 @@ static u32 get_second_word()
 	/* when the 64 bit inst is part of the script */
 	if(!single_command){
 		PRUCFG_SYSCFG = PRUCFG_SYSCFG & (~SYSCFG_STANDBY_INIT); /*enable gloabl access*/
-		inst = *(shm_base + inst_pointer);
+		inst = *(shm_code + inst_pointer);
 		PRUCFG_SYSCFG = PRUCFG_SYSCFG | SYSCFG_STANDBY_INIT;
 		inst_pointer++;
 	}
@@ -60,18 +83,23 @@ void dio_handler(int opcode, u32 inst)
         else{ 
         	__R30 = __R30 & ~( 1 << val1);
         }
-
+	
+	if(single_command)
+		send_ret_value(val2 ? 1 : 0);
 }
 
 void set_handler(int opcode, u32 inst)
 {
-	int val1, val2, addr1, addr2;
+	int val2, addr1, addr2;
 
 	if(opcode == SET_32_a){
 	/* SET V, C */
 		addr1 = GET_BYTE(inst,2);
 		val2 = inst & 0xffff; //16 bit constant
 		var_loc[addr1] = val2;
+	        if(single_command)
+        	        send_ret_value(val2);
+
 	}
 
 	else if(opcode == SET_32_b){
@@ -79,6 +107,9 @@ void set_handler(int opcode, u32 inst)
 		addr1 = GET_BYTE(inst,2);
 		addr2 = GET_BYTE(inst,0);
 		var_loc[addr1] = var_loc[addr2];
+	        if(single_command)
+	                send_ret_value(var_loc[addr2]);
+
 	}
 
 	else{
@@ -98,23 +129,33 @@ void set_handler(int opcode, u32 inst)
 		//operand2 is of type C
 			val2 = inst & 0xFF;
 			var_loc[addr1] = val2;
+		        if(single_command)
+		                send_ret_value(val2);
+
 		}
 
 		if (op == 1){
 		//operand2 is of type V
 			addr2 = GET_BYTE(inst,0);
 			var_loc[addr1] = var_loc[addr2];
+		        if(single_command)
+		                send_ret_value(var_loc[addr2]);
+
 		}
 
 		else{
 		//second operand is of type Arr[v]
 			addr2 = GET_BYTE(inst, 1) + var_loc[GET_BYTE(inst, 0)];
 			var_loc[addr1] = var_loc[addr2];
+		        if(single_command)
+        		        send_ret_value(var_loc[addr2]);
+
 		}
 	}
 }
 
-void wait_handler(int opcode, u32 inst)
+//three in one :)
+void wait_goto_get_handler(int opcode, u32 inst)
 {
 	int op = (GET_BYTE(inst, 2) >> 6);
 	int val;
@@ -132,32 +173,15 @@ void wait_handler(int opcode, u32 inst)
 	/* WAIT Arr[v] */
 		val = var_loc[GET_BYTE(inst,1) + var_loc[GET_BYTE(inst, 0)]];
 	}
+	
+	if(opcode == WAIT)
+		wait(val);
 
-	wait(val);
-}
+	else if (opcode == GOTO)
+		inst_pointer = val;
 
-//this can actually be merged in wait_handler 
-//with a simple if stmnt in the fnc
-void goto_handler(int opcode, u32 inst)
-{
-        int op = (GET_BYTE(inst, 2) >> 6);
-        int val;
-        if(op == 0){
-        /* GOTO c*/
-                val = inst & 0xFFFF;
-        }
-
-        else if (op == 1){
-        /* GOTO v*/
-                val = var_loc[GET_BYTE(inst, 0)];
-        }
-
-        else{
-        /* GOTO Arr[v] */
-                val = var_loc[GET_BYTE(inst,1) + var_loc[GET_BYTE(inst, 0)]];
-        }
-
-        inst_pointer = val;
+	else if((opcode == GET) && single_command)
+		send_ret_value(val);	
 }
 
 #if 1
@@ -355,7 +379,10 @@ void math_handler(int opcode, u32 inst)
 	}
 
 	var_loc[addr] = res;
-	//return_to_userspace(res);
+
+	if(single_command)
+		send_ret_value(res);
+
 }
 #endif
 
@@ -377,8 +404,9 @@ static int handle_downcall(u32 id, u32 arg0, u32 arg1, u32 arg2,
 			is_executing = 0;
 			is_waiting = false;
 			PRUCFG_SYSCFG = PRUCFG_SYSCFG & (~SYSCFG_STANDBY_INIT); /*enable gloabl access*/
-			shm_base = (u32 *)arg0;
-			*shm_base = arg1 * arg1; /*for test purposes - checked by kernel*/
+			shm_code = (u32 *)arg0;
+			shm_ret = (u32 *)arg1;
+			*shm_code = arg1 * arg1; /*for test purposes - checked by kernel*/
 			PRUCFG_SYSCFG = PRUCFG_SYSCFG | SYSCFG_STANDBY_INIT;
 		break;
 		
@@ -434,7 +462,7 @@ void check_event(void)
 {
 	if( IF_EVENT ){
 		/* clear the system event */
-		PINTC_SICR = 21; 
+		PINTC_SICR = 21;
 
 		/* call the handler to perform the downcall*/
 		sc_downcall(handle_downcall);
@@ -492,7 +520,7 @@ void execute_instruction()
 	u32 inst;
 	if(!single_command){
 		PRUCFG_SYSCFG = PRUCFG_SYSCFG & (~SYSCFG_STANDBY_INIT); /*enable gloabl access*/
-		inst = *(shm_base + inst_pointer);
+		inst = *(shm_code + inst_pointer);
 		PRUCFG_SYSCFG = PRUCFG_SYSCFG | SYSCFG_STANDBY_INIT;
 		inst_pointer++;
 	}
@@ -518,13 +546,11 @@ void execute_instruction()
 		break;
 		
 		case WAIT:
-			wait_handler(opcode, inst);
-		break;
-		
 		case GOTO:
-			goto_handler(opcode, inst);
+		case GET:
+			wait_goto_get_handler(opcode, inst);
 		break;
-		
+
 		case IF_EQ:
 		case IF_NEQ:
 		case IF_GTE:

@@ -57,7 +57,15 @@ struct pru_shm {
 	unsigned int is_valid :1;
 };
 
-//static struct pru_shm shm;
+/* max/min shared memory segments per PRU */
+#define MAX_SHARED	4
+#define MIN_SHARED	2
+
+/* index for shm of botspeak code */
+#define BS_CODE		0
+/* index for shm of return values */
+#define BS_RET		1
+
 
 struct rproc;
 
@@ -196,11 +204,6 @@ struct pruproc_core;
 /* maximum PWMs */
 #define PRU_PWM_MAX	32
 
-/* maximum shared memory segments per PRU */
-#define MAX_SHARED	4
-#define MIN_SHARED	2
-
-#define BS_CODE		0
 /* returns the initialized bin_attr struct for sysfs */
 #define BIN_ATTR(_name,_mode,_size,_read,_write,_mmap) { \
        .attr = { .name  =  __stringify(_name),  .mode = _mode  },   \
@@ -1493,14 +1496,16 @@ static ssize_t pru_speak_shm_init(int idx, struct device *dev, struct device_att
         int ret;
 
 	//struct pru_shm shm = pp->ppc->shm[BS_CODE];
-	struct pru_shm shm = pp->pru_to_pruc[idx]->shm[BS_CODE];
+	struct pru_shm shm_code = pp->pru_to_pruc[idx]->shm[BS_CODE];
+	struct pru_shm shm_ret = pp->pru_to_pruc[idx]->shm[BS_RET];
 
-	printk("physical addr : %x\n", (unsigned int)shm.paddr);
+	printk("physical addr shm_code, shm_ret : %x, %x\n", (unsigned int)shm_code.paddr, (unsigned int)shm_ret.paddr);
 
-        ret = pru_downcall_idx(pp, idx, 1, (int)shm.paddr, 10, 0, 0, 0); //pp, idx, sys call id, base addr, val, junk,.,.
-        printk( KERN_INFO "pru_speak_init, pram value : 10, return value : %d, modified value : %d\n", ret, *((int *)shm.vaddr));
+        ret = pru_downcall_idx(pp, idx, 1, (int)shm_code.paddr, (int)shm_ret.paddr, 10, 0, 0); //pp, idx, sys call id, base addr, val, junk,.,.
+	//The pru modifies the arg "10" and places "10^2" in the first loc of shm_code
+        printk( KERN_INFO "pru_speak_init, pram value : 10, return value : %d, modified value : %d\n", ret, *((int *)shm_code.vaddr));
 	
-	return scnprintf(buf, PAGE_SIZE, "%x", (int)shm.paddr);
+	return scnprintf(buf, PAGE_SIZE, "%x,%x", (int)shm_code.paddr, (int)shm_ret.paddr);
 }
 
 static ssize_t pru_speak_shm_init0(struct device *dev, struct device_attribute *attr, char *buf)
