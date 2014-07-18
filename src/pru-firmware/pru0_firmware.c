@@ -7,7 +7,7 @@ void wait(int);
 static void send_ret_value(int val)
 {
 	//TODO : handle multiple params?
-
+	//TODO : change to sysfs
 	/*enable gloabl access*/
 	PRUCFG_SYSCFG = PRUCFG_SYSCFG & (~SYSCFG_STANDBY_INIT); 
 
@@ -430,6 +430,7 @@ static int handle_downcall(u32 id, u32 arg0, u32 arg1, u32 arg2,
 			is_executing = false;
 			is_waiting = false;
 			inst_pointer = 0;
+			ret_pointer = 1;
 		break;
 
 		case SYS_STAT:
