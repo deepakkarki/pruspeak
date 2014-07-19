@@ -43,7 +43,7 @@ class PruSpeak:
 		'''
 		return_values = []
 		if type(cmd_set) == str:
-			cmd_set = str_to_list(cmd_set)
+			cmd_set = PruSpeak.str_to_list(cmd_set)
 	
 		for inst in cmd_set:
 			if inst == 'SCRIPT':
