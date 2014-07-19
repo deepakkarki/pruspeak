@@ -77,9 +77,7 @@ def _get_return_value():
 			#wait till PRU gives a return value
 
 		ret_value = ret_shm[ret_counter*4 : (ret_counter*4)+4]
-		print "Type of ret_value : ", type(ret_value)
 		ret_value = struct.unpack("<L", ret_value)[0]
-		print "Type of ret_value : ", type(ret_value), " value : ", ret_value
 		ret_counter = (ret_counter % 1023) + 1
 
 	return ret_value 

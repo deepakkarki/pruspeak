@@ -253,9 +253,9 @@ def byte_code_single_op(cmd, val):
 	#case1 INT
 		byte2 = 0
 		byte0 = val.val & 0xFF #lower 8 bits
-		print "Byte 0 :", bin(byte0)
+		#print "Byte 0 :", bin(byte0)
 		byte1 = (val.val >> 8) & 0xFF #higher 8 bits
-		print "Byte 1 :", bin(byte1)
+		#print "Byte 1 :", bin(byte1)
 		
 	elif val.any_var:
 	#Var or Arr[Var]
@@ -302,19 +302,19 @@ def byte_code_if(val1, val2, cond, goto):
 	#******************val1**********************
 	if val1.type == 'INT': 
 	#val one is a const
-		print "val1 : INT"
+		#print "val1 : INT"
 		byte2 |= 0b00 << 6
 		byte0 = val1.val
 	
 	elif val1.any_var:
 	#val will be a variable; either V or Arr[C]
-		print "val1 : VAR"
+		#print "val1 : VAR"
 		byte2 |= 0b01 << 6
 		byte0 = get_var(val1)
 		
 	else:
 	#val is Ar[V]
-		print "val1 : VAR ARR"
+		#print "val1 : VAR ARR"
 		byte2 |= 0b10 <<6
 		byte0 = pru_vars[val1.val[1]]
 		byte1 = pru_arrs[val1.val[0]][0]
@@ -322,19 +322,19 @@ def byte_code_if(val1, val2, cond, goto):
 	#******************val2**********************
 	if val2.type == 'INT': 
 	#val one is a const
-		print "val2 : INT"
+		#print "val2 : INT"
 		byte2 |= 0b00 << 4
 		byte4 = val2.val
 	
 	elif val2.any_var:
 	#val will be a variable; either V or Arr[C]
-		print "val2 : VAR"
+		#print "val2 : VAR"
 		byte2 |= 0b01 << 4
 		byte4 = get_var(val2)
 		
 	else:
 	#val is Ar[V]
-		print "val2 : VAR ARR"
+		#print "val2 : VAR ARR"
 		byte2 |= 0b10  << 4
 		byte4 = pru_vars[val2.val[1]]
 		byte5 = pru_arrs[val2.val[0]][0]
@@ -342,19 +342,19 @@ def byte_code_if(val1, val2, cond, goto):
 	#******************goto**********************
 	if goto.type == 'INT': 
 	#val one is a const
-		print "goto : INT"
+		#print "goto : INT"
 		byte2 |= 0b00 << 2
 		byte6 = goto.val
 	
 	elif goto.any_var:
 	#val will be a variable; either V or Arr[C]
-		print "goto : VAR"
+		#print "goto : VAR"
 		byte2 |= 0b01 << 2
 		byte6 = get_var(goto)
 		
 	else:
 	#val is Ar[V]
-		print "goto : VAR ARR"
+		#print "goto : VAR ARR"
 		byte2 |= 0b10  << 2
 		byte6 = pru_vars[goto.val[1]]
 		byte7 = pru_arrs[goto.val[0]][0]
@@ -458,26 +458,26 @@ def byte_code_arithmetic(cmd, val1, val2):
 		#***********val1************
 		if val1.type == 'INT': 
 		#val one is a const
-			print "val1 : INT"
+			#print "val1 : INT"
 			byte2 |= 0b00 << 7
 			byte1 = val1.val
 	
 		else:
 		#val will be a variable; either V or Arr[C]
-			print "val1 : VAR"
+			#print "val1 : VAR"
 			byte2 |= 0b01 << 7
 			byte1 = get_var(val1)
 			
 		#***********val2************
 		if val2.type == 'INT': 
 		#val one is a const
-			print "val2 : INT"
+			#print "val2 : INT"
 			byte2 |= 0b00 << 6
 			byte0 = val2.val
 	
 		else:
 		#val will be a variable; either V or Arr[C]
-			print "val1 : VAR"
+			#print "val1 : VAR"
 			byte2 |= 0b01 << 6
 			byte0 = get_var(val2)
 			
@@ -549,72 +549,72 @@ def p_inst_SET(p):
 
 def p_inst_WAIT(p):
 	'''inst : WAIT val'''
-	print "WAIT command - val :", p[2]
+	#print "WAIT command - val :", p[2]
 	p[0] = byte_code_single_op(p[1], p[2])
 	
 def p_inst_GOTO(p):
 	'''inst : GOTO val'''
-	print "GOTO command - val :", p[2]
+	#print "GOTO command - val :", p[2]
 	p[0] = byte_code_single_op(p[1], p[2])
 	
 def p_inst_GET(p):
 	'''inst : GET val'''
-	print "GET command - val :", p[2]
+	#print "GET command - val :", p[2]
 	p[0] = byte_code_single_op(p[1], p[2])
 
 def p_inst_IF(p):
 	'''inst : IF '(' val cond val ')' GOTO val'''
-	print "IF command - ", "val1 :", p[3], "val2 :", p[5], "cond :", p[4], "GOTO :", p[8]
+	#print "IF command - ", "val1 :", p[3], "val2 :", p[5], "cond :", p[4], "GOTO :", p[8]
 	p[0] = byte_code_if(p[3], p[5], p[4], p[8])
 	
 def p_inst_ADD(p):
 	'''inst : ADD val ',' val'''
-	print "ADD command -", " val1 : ", p[2], " val2 : " , p[4]
+	#print "ADD command -", " val1 : ", p[2], " val2 : " , p[4]
 	p[0] = byte_code_arithmetic(p[1], p[2], p[4])
 	
 def p_inst_SUB(p):
 	'''inst : SUB val ',' val'''
-	print "SUB command -", " val1 : ", p[2], " val2 : " , p[4]
+	#print "SUB command -", " val1 : ", p[2], " val2 : " , p[4]
 	p[0] = byte_code_arithmetic(p[1], p[2], p[4])
 
 def p_inst_MUL(p):
 	'''inst : MUL val ',' val'''
-	print "MUL command -", " val1 : ", p[2], " val2 : " , p[4]
+	#print "MUL command -", " val1 : ", p[2], " val2 : " , p[4]
 	p[0] = byte_code_arithmetic(p[1], p[2], p[4])
 
 def p_inst_DIV(p):
 	'''inst : DIV val ',' val'''
-	print "DIV command -", " val1 : ", p[2], " val2 : " , p[4]
+	#print "DIV command -", " val1 : ", p[2], " val2 : " , p[4]
 	p[0] = byte_code_arithmetic(p[1], p[2], p[4])
 
 def p_inst_MOD(p):
 	'''inst : MOD val ',' val'''
-	print "MOD command -", " val1 : ", p[2], " val2 : " , p[4]
+	#print "MOD command -", " val1 : ", p[2], " val2 : " , p[4]
 	p[0] = byte_code_arithmetic(p[1], p[2], p[4])
 
 def p_inst_AND(p):
 	'''inst : AND val ',' val'''
-	print "AND command -", " val1 : ", p[2], " val2 : " , p[4]
+	#print "AND command -", " val1 : ", p[2], " val2 : " , p[4]
 	p[0] = byte_code_arithmetic(p[1], p[2], p[4])
 
 def p_inst_OR(p):
 	'''inst : OR val ',' val'''
-	print "OR command -", " val1 : ", p[2], " val2 : " , p[4]
+	#print "OR command -", " val1 : ", p[2], " val2 : " , p[4]
 	p[0] = byte_code_arithmetic(p[1], p[2], p[4])
 	
 def p_inst_BSR(p):
 	'''inst : BSR val ',' val'''
-	print "SUB command -", " val1 : ", p[2], " val2 : " , p[4]
+	#print "SUB command -", " val1 : ", p[2], " val2 : " , p[4]
 	p[0] = byte_code_arithmetic(p[1], p[2], p[4])
 	
 def p_inst_BSL(p):
 	'''inst : BSL val ',' val'''
-	print "SUB command -", " val1 : ", p[2], " val2 : " , p[4]
+	#print "SUB command -", " val1 : ", p[2], " val2 : " , p[4]
 	p[0] = byte_code_arithmetic(p[1], p[2], p[4])
 
 def p_inst_NOT(p):
 	'''inst : NOT val ',' val'''
-	print "NOT command -", " val1 : ", p[2], " val2 : " , p[4]
+	#print "NOT command -", " val1 : ", p[2], " val2 : " , p[4]
 	p[0] = byte_code_arithmetic(p[1], p[2], p[4])
 
 def p_inst_HALT(p):
@@ -623,7 +623,7 @@ def p_inst_HALT(p):
 
 def p_val_INT(p):
 	'''val : INT'''
-	print p[1]
+	#print p[1]
 	p[0] = Value('INT', p[1])
 
 def p_val_VAR(p):
