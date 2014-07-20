@@ -97,9 +97,11 @@ class PruSpeak:
 			else:
 				#case of normal instruction
 				byte_code = parser.parse(inst)
-				ret = kernel_lib.single_instruction(byte_code)
-				return_values.append(ret)
-				#byte_code = parser.parse(inst)
+
+				#if the inst is successfully compiled, then send to pru
+				if byte_code:
+					ret = kernel_lib.single_instruction(byte_code)
+					return_values.append(ret)
 		
 		return return_values
 	

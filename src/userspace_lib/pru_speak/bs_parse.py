@@ -1,3 +1,8 @@
+## This is the parser cum code generator module for PRU Speak
+## The only thing exposed from this module is the parser object
+## The parser object takes in a BS instruction and returns the bytecode encoding
+## If there is an error (syntax or semantic); None is returned; in the future throw custom Exception
+
 import ply.yacc as yacc
 from bs_lex import *
 from node import *
@@ -6,6 +11,7 @@ from node import *
 		
 #keeps track of next available memory offset to place a variable
 pru_var_count = 0
+PRU_VAR_AREA = 240 #max variable slots
 
 #does the variable to memory mapping work
 pru_vars = {
@@ -539,13 +545,36 @@ cond : GTE
 """
 
 def p_inst_SET(p):
-	'''inst : SET val ',' val'''
-	#print "SET command -", " val1 : ", p[2], " val2 : " , p[4]
-	if p[2].flag: 
-		#it is of type SET DIO[x] , y
-		p[0] = byte_code_set_r( p[2], p[4])
-	else :
-		p[0] = byte_code_set(p[2], p[4])
+	'''inst : SET val ',' val
+		| SET VAR '[' ']' ',' val'''
+
+	global pru_var_count	
+	print "len(p) : ", len(p)
+	if len(p) == 7:
+	#array declaration case
+		print "Array declaration"
+		arr = p[2]
+		size = p[6].val
+		if arr in pru_arrs:
+			print "Arr already defined"
+		if (pru_var_count + size + 1) > PRU_VAR_AREA:
+			print "No space for Arr"
+		else :
+		#everything is okay
+			pru_arrs[arr] = (pru_var_count, size+1)
+			pru_var_count += size + 1
+
+		print "pru_arrs : ", pru_arrs
+		
+		p[0] = None #no inst to PRU
+
+	else:
+		#print "SET command -", " val1 : ", p[2], " val2 : " , p[4]
+		if p[2].flag: 
+			#it is of type SET DIO[x] , y
+			p[0] = byte_code_set_r( p[2], p[4])
+		else :
+			p[0] = byte_code_set(p[2], p[4])
 
 def p_inst_WAIT(p):
 	'''inst : WAIT val'''
