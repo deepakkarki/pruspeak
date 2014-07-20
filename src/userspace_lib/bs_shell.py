@@ -10,18 +10,29 @@ sentinel = ''
 def get_data():
 	out.write("ps>") #prompt the user
 	l = []
-
-	for line in iter(raw_input, sentinel):
-		l.append(line)		#get the input
-		out.write("...")	
+	try:
+		for line in iter(raw_input, sentinel):
+			l.append(line)		#get the input
+			out.write("...")	
+	except KeyboardInterrupt as e:
+		print "Closing terminal"
+		return -1
+	
+	except EOFError as e:
+		print "Closing terminal"
+		return -1
 
 	return '\n'.join(l)	#return the data entered
 
 
 while True:
 	code = get_data()
-	if not code:
+	if (code == -1) or (code == 'exit'):
 		exit()
+
+	if code == '':
+		continue 
+
 	try:
 		ret = pru_speak.execute_instruction(code)
 		print ret
