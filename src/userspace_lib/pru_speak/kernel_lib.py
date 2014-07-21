@@ -63,7 +63,8 @@ def _get_return_value():
 	global ret_counter
 
         if not RET_MEM_OFF:
-		_mem_init()
+		#_mem_init()
+		print "error! return value not initialized"
 
 	ret_value = 0
 
@@ -88,6 +89,9 @@ def single_instruction(byte_code):
 	get the PRU to execute an single instruction
 	instruction (int/tuple containing 32bit / 2 32 bit byte-code inst) : single BotSpeak Instruction
 	'''
+	if not RET_MEM_OFF:
+		_mem_init()
+
 	if type(byte_code) == tuple :
 		# **WARNING** LSB will be written in first - take note while coding kernel driver
 		to_write_low = struct.pack("<L", byte_code[0])

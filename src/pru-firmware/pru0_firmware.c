@@ -406,7 +406,7 @@ static int handle_downcall(u32 id, u32 arg0, u32 arg1, u32 arg2,
 			PRUCFG_SYSCFG = PRUCFG_SYSCFG & (~SYSCFG_STANDBY_INIT); /*enable gloabl access*/
 			shm_code = (u32 *)arg0;
 			shm_ret = (u32 *)arg1;
-			*shm_code = arg1 * arg1; /*for test purposes - checked by kernel*/
+			*shm_code = *shm_code * shm_code; /*for test purposes - checked by kernel*/
 			PRUCFG_SYSCFG = PRUCFG_SYSCFG | SYSCFG_STANDBY_INIT;
 		break;
 		
