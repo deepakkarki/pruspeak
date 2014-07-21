@@ -4,6 +4,7 @@
 #	Userfrontend <-  Shell  <- this API
 #	The API is mainly used to execute an BS instruction.
 
+import bs_parse
 from bs_parse import parser
 import kernel_lib
 
@@ -49,6 +50,8 @@ class PruSpeak:
 			if inst == 'SCRIPT':
 				if not self.script_mode:
 					self.script_mode = True
+					bs_parse.script_mode = True
+					bs_parse.script_inst_size = []
 					self.script_code = [ ]
 				#else Error
 				else:
@@ -57,6 +60,7 @@ class PruSpeak:
 			elif inst == 'ENDSCRIPT':
 				if self.script_mode:
 					self.script_mode = False
+					bs_parse.script_mode = False
 					self.script_code.append(parser.parse('HALT'))
 				else:
 					return return_values.append(-1)
@@ -88,12 +92,16 @@ class PruSpeak:
 				if type(byte_code) == tuple:
 				#64 bit instruction
 					self.script_code.extend(byte_code)
+					bs_parse.script_inst_size.append(len(byte_code))
 				
-				else:
+				elif type(byte_code) == int:
 				#32 bit instruction
 					self.script_code.append(byte_code)
-				
-			
+					bs_parse.script_inst_size.append(1)
+						
+				else :
+				#error
+					pass #handle error here later
 			else:
 				#case of normal instruction
 				byte_code = parser.parse(inst)

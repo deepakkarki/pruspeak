@@ -11,22 +11,28 @@ from node import *
 		
 #keeps track of next available memory offset to place a variable
 pru_var_count = 0
-PRU_VAR_AREA = 240 #max variable slots
+#max variable slots
+PRU_VAR_AREA = 240 
+
+#size of each inst in the script
+#used by GOTO to find exact location to jump to
+script_inst_size = []
+#e.g. [1,1,1,2,2,2,2]
+
+#Are the incoming instruction parts of scripts?
+script_mode = False
 
 #does the variable to memory mapping work
 pru_vars = {
 		#e.g. "var1" : 0x02,
-		"var1" : 0x02,
-		"var2" : 0x03,
-		"var3" : 0x04
 }
 
 #does the array to (address, size) mapping.
-pru_arrs = {#add DIO, PWM etc. here
+pru_arrs = {
 		#e.g. "arr1" : (0x10, 5) 
-					#start, size
-		"arr1" : (0x10, 5) ,
-		"arr2" : (0x20, 5)
+		#start, size
+	'DIO' : (240, 8),
+	'AIO' : (248, 8)
 }
 
 def BYTE(val, n):
@@ -185,6 +191,10 @@ def byte_code_set(val1, val2):
 			if val1.any_var:
 				byte2 |= 0b01 << 4
 				
+				if val1.type == 'INT':	
+				#error
+					return 0
+
 				if val1.arr_const:
 				#val1 is an const indexed array
 					byte0 = pru_arrs[val1.val[0]][0] + val1.val[1]
@@ -239,7 +249,7 @@ def byte_code_set(val1, val2):
 	byte3 = OPCODE
 	print byte3, byte2, byte1, byte0
 	print byte7, byte6, byte5, byte4
-	
+
 	
 def byte_code_single_op(cmd, val):
 	'''
@@ -255,13 +265,22 @@ def byte_code_single_op(cmd, val):
 	OPCODE = opcode_dict[cmd]
 	byte2, byte1, byte0 = 0, 0, 0
 
+	#incase wait or goto
+	if OPCODE < 22 nad not script_mode:
+		return 0 #these inst only make sense in a script
+
 	if val.type == 'INT':
 	#case1 INT
 		byte2 = 0
-		byte0 = val.val & 0xFF #lower 8 bits
-		#print "Byte 0 :", bin(byte0)
-		byte1 = (val.val >> 8) & 0xFF #higher 8 bits
-		#print "Byte 1 :", bin(byte1)
+		if OPCODE == 21: 
+			#special case for goto
+			val.val = sum(script_inst_size[:val.val])
+
+		else:
+			byte0 = val.val & 0xFF #lower 8 bits
+			byte1 = (val.val >> 8) & 0xFF #higher 8 bits
+
+		
 		
 	elif val.any_var:
 	#Var or Arr[Var]
@@ -277,6 +296,7 @@ def byte_code_single_op(cmd, val):
 	return pack_byte(OPCODE, byte2, byte1, byte0)
 	print byte3, byte2, byte1, byte0
 	
+
 def byte_code_if(val1, val2, cond, goto):
 	'''
 	IF (val1 cond val2) GOTO goto
@@ -284,6 +304,9 @@ def byte_code_if(val1, val2, cond, goto):
 	'''
 	#opcode starts with 32 
 	
+	if not script_mode:
+		return 0
+
 	#This inst owns the (0010-XXXX) address space
 	#0000 : ==
 	#0001 : !=
