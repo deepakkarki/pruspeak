@@ -72,7 +72,16 @@ def get_var(val):
 	'''
 	if val.arr_const:
 		#val1 is an const indexed array
-		return pru_arrs[val.val[0]][0] + val.val[1]
+
+		#check out of bounds
+		arr, size = pru_arrs[val.val[0]]
+		size -= 1
+		index = val.val[1]
+		if(index < size):
+			return pru_arrs[val.val[0]][0] + index + 1
+		else:
+			print "array out of bounds"
+			return -1 #throw exception later
 	else:
 		#val1 is an VAR
 		return pru_vars[val.val]
@@ -133,13 +142,15 @@ def byte_code_set_r(val1, val2):
 		byte1 = pru_vars.get(val1.val[1], val1.val[1])
 		#if x is a const, it is returned; else value of variable in pru_vars is returned
 		
-		if val2.type == 'ARR' :
-			#if y is an array; should add error checking here - to check overflow
-			byte0 = pru_arrs[val2.val[0]][0] + val2.val[1]#arr address + const
+		if val2.type == 'INT':
+			#y is an constant
+			byte0 = val2.val	
 		
-		else:
-			byte0 = pru_vars.get(val2.val, val2.val)
-			#if y is a const, it is returned; else value of variable in pru_vars is returned
+		else :
+			#y is  V or Arr[c]
+			byte0 = get_var(val2)
+			if byte0 == -1:
+				return 0
 			
 	#pack all the bytes
 	return pack_byte(OPCODE, byte2, byte1, byte0)
@@ -179,6 +190,8 @@ def byte_code_set(val1, val2):
 			#y is a var
 				byte2 |= 0b01 << 4
 				byte4 = get_var(val2)
+				if byte4 == -1:
+					return 0
 			
 			else:
 			#y is arr[var]
@@ -197,7 +210,7 @@ def byte_code_set(val1, val2):
 
 				if val1.arr_const:
 				#val1 is an const indexed array
-					byte0 = pru_arrs[val1.val[0]][0] + val1.val[1]
+					byte0 = get_var(val1)
 				else:
 				#val1 is an VAR
 					byte0 = pru_vars.get(val1.val, None)
@@ -217,7 +230,9 @@ def byte_code_set(val1, val2):
 	
 		if val1.arr_const:
 		#val1 is an const indexed array
-			byte2 = pru_arrs[val1.val[0]][0] + val1.val[1]
+			byte2 = get_var(val1)
+			if byte2 == -1:
+				return 0
 		else:
 		#val1 is an VAR
 			byte2 = pru_vars.get(val1.val, None)
@@ -250,6 +265,34 @@ def byte_code_set(val1, val2):
 	print byte3, byte2, byte1, byte0
 	print byte7, byte6, byte5, byte4
 
+
+def byte_code_dec_array(name, val):
+	'''
+	declare an array : SET arr[], 5
+	creates array arr, 6 elements in length
+	arr[0] to  arr[4] maps to arr[1] to arr[5] in the PRU
+	arr[0] contains the len of accessible array, i.e. 5
+	'''
+	#opcode 19
+	OPCODE = 19
+	byte2 = 0
+	byte1 = pru_arrs[name][0]
+
+	if val.type == 'INT':
+		byte2 = 0
+		byte0 = val.val
+
+	elif val.any_var:
+		byte2 = 1 << 7
+		byte0 = get_var(val)
+		if byte0 == -1:
+			return 0
+
+	else:
+		return 0
+	
+	return pack_byte(OPCODE, byte2, byte1, byte0)
+
 	
 def byte_code_single_op(cmd, val):
 	'''
@@ -266,7 +309,7 @@ def byte_code_single_op(cmd, val):
 	byte2, byte1, byte0 = 0, 0, 0
 
 	#incase wait or goto
-	if OPCODE < 22 nad not script_mode:
+	if OPCODE < 22 and not script_mode:
 		return 0 #these inst only make sense in a script
 
 	if val.type == 'INT':
@@ -286,6 +329,7 @@ def byte_code_single_op(cmd, val):
 	#Var or Arr[Var]
 		byte2 = 0b01 << 6
 		byte0 = get_var(val)
+		if byte0 == -1: return 0
 		
 	else:
 		byte2 = 0b10 << 6
@@ -340,6 +384,8 @@ def byte_code_if(val1, val2, cond, goto):
 		#print "val1 : VAR"
 		byte2 |= 0b01 << 6
 		byte0 = get_var(val1)
+		if byte0 == -1: return 0
+
 		
 	else:
 	#val is Ar[V]
@@ -360,6 +406,8 @@ def byte_code_if(val1, val2, cond, goto):
 		#print "val2 : VAR"
 		byte2 |= 0b01 << 4
 		byte4 = get_var(val2)
+		if byte4 == -1: return 0
+
 		
 	else:
 	#val is Ar[V]
@@ -380,6 +428,8 @@ def byte_code_if(val1, val2, cond, goto):
 		#print "goto : VAR"
 		byte2 |= 0b01 << 2
 		byte6 = get_var(goto)
+		if byte6 == -1: return 0
+
 		
 	else:
 	#val is Ar[V]
@@ -450,6 +500,8 @@ def byte_code_arithmetic(cmd, val1, val2):
 				print "val2 : VAR"
 				byte2 |= 0b01 << 4
 				byte4 = get_var(val2)
+				if byte4 == -1: return 0
+
 				
 			else :
 			#val2 Arr[var]
@@ -471,6 +523,7 @@ def byte_code_arithmetic(cmd, val1, val2):
 				print "val1 : VAR"
 				byte2 |= 0b01 <<6
 				byte0 = get_var(val1)
+				if byte0 == -1: return 0
 
 			#val2 stuff
 			byte2 |= 0b10 << 4
@@ -496,6 +549,7 @@ def byte_code_arithmetic(cmd, val1, val2):
 			#print "val1 : VAR"
 			byte2 |= 0b01 << 7
 			byte1 = get_var(val1)
+			if byte1 == -1: return 0
 			
 		#***********val2************
 		if val2.type == 'INT': 
@@ -509,6 +563,7 @@ def byte_code_arithmetic(cmd, val1, val2):
 			#print "val1 : VAR"
 			byte2 |= 0b01 << 6
 			byte0 = get_var(val2)
+			if byte0 == -1: return 0
 			
 		#return 32bit encoded instruction
 		return pack_byte(OPCODE, byte2, byte1, byte0)
@@ -572,7 +627,6 @@ def p_inst_SET(p):
 		| SET VAR '[' ']' ',' val'''
 
 	global pru_var_count	
-	print "len(p) : ", len(p)
 	if len(p) == 7:
 	#array declaration case
 		print "Array declaration"
@@ -589,7 +643,7 @@ def p_inst_SET(p):
 
 		print "pru_arrs : ", pru_arrs
 		
-		p[0] = None #no inst to PRU
+		p[0] = byte_code_dec_array(arr, p[6])
 
 	else:
 		#print "SET command -", " val1 : ", p[2], " val2 : " , p[4]
@@ -755,14 +809,18 @@ if __name__ == '__main__':
 	'GOTO arr1[4]'
 ]
 	try :
-		print parser.parse("OR arr1[4], arr2[4]")
+		print parser.parse("SET arr[], 4")
+		print pru_var_count
+		print parser.parse("SET var, 2")
+                print pru_var_count
+		print parser.parse("SET arr[var], var")
 	except Exception as e:
 		print "some error"
 		print e.args
-
+'''
 	for inst in s :
 		print inst
 		res = parser.parse(inst)
 		print res
 		print ''
-
+'''

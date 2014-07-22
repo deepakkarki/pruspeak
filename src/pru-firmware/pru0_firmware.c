@@ -43,6 +43,7 @@ static u32 get_second_word()
 	/* when the 64 bit inst is a single_inst */
 	else {
 		inst = single_command_2;
+		//send_ret_value(200+ single_command_2); //************ 
 	}
 	
 	return inst;
@@ -55,24 +56,25 @@ void dio_handler(int opcode, u32 inst)
 	int val1, val2;
 	if(opcode == SET_DIO_a){
 	/* SET DIO[c/v], c/v */
-
+		
 		val1 = GET_BIT(inst, 23) ? var_loc[GET_BYTE(inst, 1)]: GET_BYTE(inst, 1);
 		val2 = GET_BIT(inst, 22) ? var_loc[GET_BYTE(inst, 0)]: GET_BYTE(inst, 0);
 	}
 
-	else if (opcode == SET_DIO_b){
-	/* SET DIO[c], arr[v] */
-		val1 = GET_BYTE(inst, 2);
-		int addr = GET_BYTE(inst, 1) + var_loc[GET_BYTE(inst, 0)];
-		val2 = var_loc[addr];
+	// "SET DIO[c], arr[v]"  orelse "SET DIO[v] , arr[v]"
+	val1 = (opcode == SET_DIO_b) ? GET_BYTE(inst, 2) : var_loc[GET_BYTE(inst,2)];
+		
+	//array size check
+	int index = var_loc[GET_BYTE(inst, 0)];
+	if (var_loc[GET_BYTE(inst,1)] <= index ){
+		//error
+		if (single_command)
+			send_ret_value(0);
+		return;
 	}
-
-	else {
-	/* SET DIO[v], arr[v] */
-		val1 = var_loc[GET_BYTE(inst,2)];
-		int addr = GET_BYTE(inst, 1) + var_loc[GET_BYTE(inst, 0)];
-		val2 = var_loc[addr];
-	}
+	//if everything okay
+	int addr = GET_BYTE(inst, 1) + index + 1;
+	val2 = var_loc[addr];
 
 	/* set hi*/
 	if(val2 && (val1 < MAX_DIO)){ 
@@ -117,14 +119,33 @@ void set_handler(int opcode, u32 inst)
 		int op = GET_BYTE(inst, 2) >> 6;
 
 		//if op == 1, operand1 is a variable; else it is a Arr[v] type
-		addr1 = (op == 1) ? GET_BYTE(inst, 0): (GET_BYTE(inst,1) + var_loc[GET_BYTE(inst, 0)]);
+		if (op == 1){ 
+			addr1 = GET_BYTE(inst, 0); 
+		}
+
+		//Arr[v]
+		else{
+			//array size check
+	                int index = var_loc[GET_BYTE(inst, 0)];
+                	if (var_loc[GET_BYTE(inst,1)] <= index ){
+                        	//error 
+                        	if (single_command)
+                                	send_ret_value(0);
+                        	return;
+                	} 
+			addr1 = GET_BYTE(inst,1) + index + 1;
+			//send_ret_value(100 + addr1); //*****************
+		}
+
 		u32 old_inst = inst;
 
 		//get the next 32 bits of the inst
 		inst = get_second_word();
 		
 		op = ((GET_BYTE(old_inst, 2) >> 4) & 3); //get bits 4 and 5 of byte2
-
+	
+		//send_ret_value(100 + op); //*****************
+	
 		if (op == 0){
 		//operand2 is of type C
 			val2 = inst & 0xFF;
@@ -137,6 +158,10 @@ void set_handler(int opcode, u32 inst)
 		if (op == 1){
 		//operand2 is of type V
 			addr2 = GET_BYTE(inst,0);
+		//	send_ret_value(100 + addr2); //*****************
+		//	send_ret_value(100 + GET_BYTE(inst, 1));
+		//	send_ret_value(100 + GET_BYTE(inst, 2));
+		//	send_ret_value(100 + GET_BYTE(inst, 3)); //*************
 			var_loc[addr1] = var_loc[addr2];
 		        if(single_command)
 		                send_ret_value(var_loc[addr2]);
@@ -145,13 +170,29 @@ void set_handler(int opcode, u32 inst)
 
 		else{
 		//second operand is of type Arr[v]
-			addr2 = GET_BYTE(inst, 1) + var_loc[GET_BYTE(inst, 0)];
+			//array size check
+			int index = var_loc[GET_BYTE(inst, 0)];
+                        if (var_loc[GET_BYTE(inst,1)] <= index ){
+                                //error 
+                                if (single_command)
+                                        send_ret_value(0);
+                                return;
+                        }
+                        addr2 = GET_BYTE(inst,1) + index + 1;
 			var_loc[addr1] = var_loc[addr2];
-		        if(single_command)
-        		        send_ret_value(var_loc[addr2]);
-
+                        if(single_command)
+                                send_ret_value(var_loc[addr2]);
 		}
+
 	}
+}
+
+void array_dec_handler(int opcode, u32 inst)
+{
+	int arr = GET_BYTE(inst, 1);
+	int size = GET_BIT(inst, 23) ? var_loc[GET_BYTE(inst, 0)]: GET_BYTE(inst, 0);
+	var_loc[arr] = size;
+	send_ret_value(size);
 }
 
 //three in one :)
@@ -171,7 +212,16 @@ void wait_goto_get_handler(int opcode, u32 inst)
 
 	else{
 	/* WAIT Arr[v] */
-		val = var_loc[GET_BYTE(inst,1) + var_loc[GET_BYTE(inst, 0)]];
+                //array size check
+                int index = var_loc[GET_BYTE(inst, 0)];
+                if (var_loc[GET_BYTE(inst,1)] <= index ){
+                    //error 
+                        if (single_command)
+				send_ret_value(0);
+                        return;
+                }
+
+		val = var_loc[GET_BYTE(inst,1) + index + 1];
 	}
 	
 	if(opcode == WAIT)
@@ -210,7 +260,17 @@ void if_handler(int opcode, u32 inst)
 
 	else{
 	/* operand1 is of type Arr[v] */
-		val1 = var_loc[GET_BYTE(inst, 1) + var_loc[GET_BYTE(inst, 0)]];
+
+	        //array size check
+	        int index = var_loc[GET_BYTE(inst, 0)];
+	        if (var_loc[GET_BYTE(inst,1)] <= index ){
+	        	//error 
+	        	if (single_command)
+	                	send_ret_value(0);
+	        	return;
+	        }
+
+                val1 = var_loc[GET_BYTE(inst,1) + index + 1];
 	}
 
 	u32 old_inst = inst; //old_inst is the 1st 32 bits of the inst.
@@ -234,7 +294,17 @@ void if_handler(int opcode, u32 inst)
 
         else{
         /* operand2 is of type Arr[v] */
-                val2 = var_loc[GET_BYTE(inst, 1) + var_loc[GET_BYTE(inst, 0)]];
+
+                //array size check
+                int index = var_loc[GET_BYTE(inst, 0)];
+                if (var_loc[GET_BYTE(inst,1)] <= index ){
+                        //error 
+                        if (single_command)
+                                send_ret_value(0);
+                        return;
+                }
+
+                val2 = var_loc[GET_BYTE(inst,1) + index + 1];
         }
 
         /*** GET val3 from second part of the inst ***/
@@ -253,7 +323,17 @@ void if_handler(int opcode, u32 inst)
 
         else{
         /* operand3 is of type Arr[v] */
-                val3 = var_loc[GET_BYTE(inst, 3) + var_loc[GET_BYTE(inst, 2)]];
+
+                //array size check
+                int index = var_loc[GET_BYTE(inst, 2)];
+                if (var_loc[GET_BYTE(inst,3)] <= index ){
+                        //error 
+                        if (single_command)
+                                send_ret_value(0);
+                        return;
+                }
+
+                val3 = var_loc[GET_BYTE(inst,3) + index + 1];
         }
 	
 	/* calculate the result based on rel_op 
@@ -333,8 +413,17 @@ void math_handler(int opcode, u32 inst)
 	
 	        else{
 	        /* operand1 is of type Arr[v] */
-			addr = GET_BYTE(inst, 1) + var_loc[GET_BYTE(inst, 0)];
-	                val1 = var_loc[addr];
+
+	                //array size check
+	                int index = var_loc[GET_BYTE(inst, 0)];
+	                if (var_loc[GET_BYTE(inst,1)] <= index ){
+	                        //error 
+	                        if (single_command)
+	                                send_ret_value(0);
+	                        return;
+	                }
+
+        	        val1 = var_loc[GET_BYTE(inst,1) + index + 1];
 	        }	
 		
 		u32 old_inst = inst; //old_inst is the 1st 32 bits of the inst.
@@ -358,7 +447,17 @@ void math_handler(int opcode, u32 inst)
 	
 	        else{
 	        /* operand2 is of type Arr[v] */
-	                val2 = var_loc[GET_BYTE(inst, 1) + var_loc[GET_BYTE(inst, 0)]];
+
+	                //array size check
+	                int index = var_loc[GET_BYTE(inst, 0)];
+	                if (var_loc[GET_BYTE(inst,1)] <= index ){
+	                        //error 
+	                        if (single_command)
+	                                send_ret_value(0);
+	                        return;
+	                }
+
+	                val2 = var_loc[GET_BYTE(inst,1) + index + 1];
 	        }
 	}
 	
@@ -406,7 +505,8 @@ static int handle_downcall(u32 id, u32 arg0, u32 arg1, u32 arg2,
 			PRUCFG_SYSCFG = PRUCFG_SYSCFG & (~SYSCFG_STANDBY_INIT); /*enable gloabl access*/
 			shm_code = (u32 *)arg0;
 			shm_ret = (u32 *)arg1;
-			*shm_code = *shm_code * shm_code; /*for test purposes - checked by kernel*/
+			*shm_code = 25; /*for test purposes - checked by kernel*/
+			*shm_ret = 1;
 			PRUCFG_SYSCFG = PRUCFG_SYSCFG | SYSCFG_STANDBY_INIT;
 		break;
 		
@@ -431,6 +531,9 @@ static int handle_downcall(u32 id, u32 arg0, u32 arg1, u32 arg2,
 			is_waiting = false;
 			inst_pointer = 0;
 			ret_pointer = 1;
+			PRUCFG_SYSCFG = PRUCFG_SYSCFG & (~SYSCFG_STANDBY_INIT);
+			*shm_ret = 1;
+			PRUCFG_SYSCFG = PRUCFG_SYSCFG | SYSCFG_STANDBY_INIT;
 		break;
 
 		case SYS_STAT:
@@ -546,6 +649,10 @@ void execute_instruction()
 			set_handler(opcode, inst);
 		break;
 		
+		case SET_ARR_DEC:
+			array_dec_handler(opcode, inst);
+		break;
+	
 		case WAIT:
 		case GOTO:
 		case GET:

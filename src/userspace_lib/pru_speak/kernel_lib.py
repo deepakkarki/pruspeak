@@ -72,9 +72,10 @@ def _get_return_value():
 		ret_shm = mmap(f.fileno(), PAGE_SIZE, offset=RET_MEM_OFF)
 		tos = ret_shm[0:4]
 		tos = struct.unpack("<L", tos)[0]
+		#print "ret_block tos : ", tos
 
 		while ret_counter == tos :
-			pass
+			print "waiting..."
 			#wait till PRU gives a return value
 
 		ret_value = ret_shm[ret_counter*4 : (ret_counter*4)+4]
@@ -96,12 +97,12 @@ def single_instruction(byte_code):
 		# **WARNING** LSB will be written in first - take note while coding kernel driver
 		to_write_low = struct.pack("<L", byte_code[0])
 		to_write_high = struct.pack("<L", byte_code[1]) #kernel still does not support 64 bit stuff
-
+		#print "len of write : ", len(to_write_low + to_write_high)		
 		with open(SINGLE_INST_64, "w") as f:
 			f.write(to_write_low + to_write_high)
 			
 	else :
-		to_write = struct.pack("<L", byte_code) #kernel still does not support 64 bit stuff
+		to_write = struct.pack("<L", byte_code) 
 
 		with open(SINGLE_INST, "w") as f:
 			f.write(to_write)

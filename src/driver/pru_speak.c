@@ -1648,11 +1648,12 @@ static ssize_t pru_speak_single_cmd_64(int idx, struct device *dev, struct devic
 	}
 
 	for(i = 4; i < 8; i++){
-		inst_b |= ((int)buf[i]) << i*8;
+		inst_b |= ((int)buf[i]) << (i-4)*8;
 	}
 	
         ret = pru_downcall_idx(pp, idx, 6, inst_a, inst_b, 0, 0, 0);/*pp, idx, syscall_id, 5 args*/
 
+	printk("**** inst_a : %d, inst_b : %d", inst_a, inst_b);
         printk( KERN_INFO "write to pru_speak_single_cmd_64. return value of downcall : %d\n", ret);
 	return 8; //quick hack
 }

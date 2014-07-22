@@ -108,6 +108,7 @@ class PruSpeak:
 
 				#if the inst is successfully compiled, then send to pru
 				if byte_code:
+					#print "Single inst: ", byte_code
 					ret = kernel_lib.single_instruction(byte_code)
 					return_values.append(ret)
 		
