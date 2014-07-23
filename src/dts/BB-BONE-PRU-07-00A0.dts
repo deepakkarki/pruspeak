@@ -35,8 +35,8 @@
 				/* pru0: pr1_pru0_pru_r30_10 is on MMC0_DAT1 */
 				/* pru0: pr1_pru0_pru_r30_9 is on MMC0_DAT2 */
 				/* pru0: pr1_pru0_pru_r30_8 is on MMC0_DAT3 */
-		"P8.11",	/* pru0: pr1_pru0_pru_r31_15 */
-		"P8.12",	/* pru0: pr1_pru0_pru_r31_14 */
+		"P8.15",	/* pru0: pr1_pru0_pru_r31_15 */
+		"P8.14",	/* pru0: pr1_pru0_pru_r31_14 */
 
 		//"P8.20",	/* pru1: pr1_pru1_pru_r30_13 */ --conflict with eMMC
 

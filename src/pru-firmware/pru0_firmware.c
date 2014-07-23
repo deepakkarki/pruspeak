@@ -1,7 +1,7 @@
 #include "pru_firmware.h"
 #include "pru0_firmware.h"
 
-int var_loc[128];
+int var_loc[256];
 void wait(int);
 
 static void send_ret_value(int val)
@@ -53,11 +53,15 @@ static u32 get_second_word()
 int get_var_val(int addr)
 {
 	if (addr > MAX_DATA){
-		if(addr < AIO_OFF){
+		if(addr < IO_OFF){
 		//case DIO
 		//240 to 255 -> DIO[0] to DIO[15]
-		//************add some code here to take care of addr for spl array *******
-				//addr -= 1 (?)
+			
+			addr -= 1; 
+			//this is there since if the code reaces here it is Arr[c/v]
+			//so either the userspace compiler or calling pru func here
+			//would have added 1. this should be taken care of.
+
 			addr -= DIO_OFF;
 			return GET_BIT(__R31, addr);
 		}
@@ -520,6 +524,7 @@ static int handle_downcall(u32 id, u32 arg0, u32 arg1, u32 arg2,
 		case SYS_INIT:
 			is_executing = 0;
 			is_waiting = false;
+			var_loc[DIO_OFF] = 0xFFFFFF; //no index out of bounds for DIO, AIO etc.
 			PRUCFG_SYSCFG = PRUCFG_SYSCFG & (~SYSCFG_STANDBY_INIT); /*enable gloabl access*/
 			shm_code = (u32 *)arg0;
 			shm_ret = (u32 *)arg1;

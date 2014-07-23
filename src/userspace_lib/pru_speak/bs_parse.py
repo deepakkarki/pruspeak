@@ -31,7 +31,7 @@ pru_vars = {
 pru_arrs = {
 		#e.g. "arr1" : (0x10, 5) 
 		#start, size
-	'DIO' : (240, 8),
+	'DIO' : (240, 16),
 	'AIO' : (248, 8)
 }
 

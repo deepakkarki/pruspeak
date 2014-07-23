@@ -7,7 +7,7 @@
 /*max number of DIO pins*/
 #define MAX_DIO			12
 
-/* max data area */
+/* max data area (in terms of index for var_loc[])*/
 #define MAX_DATA		239
 
 /* start of DIO, AIO */
