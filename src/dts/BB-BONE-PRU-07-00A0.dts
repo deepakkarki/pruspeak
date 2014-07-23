@@ -35,8 +35,8 @@
 				/* pru0: pr1_pru0_pru_r30_10 is on MMC0_DAT1 */
 				/* pru0: pr1_pru0_pru_r30_9 is on MMC0_DAT2 */
 				/* pru0: pr1_pru0_pru_r30_8 is on MMC0_DAT3 */
-		"P8.11"		/* pru0: pr1_pru0_pru_r31_15 */
-		"P8.12"		/* pru0: pr1_pru0_pru_r31_14 */
+		"P8.11",	/* pru0: pr1_pru0_pru_r31_15 */
+		"P8.12",	/* pru0: pr1_pru0_pru_r31_14 */
 
 		//"P8.20",	/* pru1: pr1_pru1_pru_r30_13 */ --conflict with eMMC
 
@@ -81,8 +81,8 @@
 					0x198 0x25	/* mcasp0_axr0.pr1_pru0_pru_r30_2, MODE5 | OUTPUT | PRU */
 					0x194 0x25	/* mcasp0_fsx.pr1_pru0_pru_r30_1, MODE5 | OUTPUT | PRU */
 					0x190 0x25	/* mcasp0_aclkx.pr1_pru0_pru_r30_0, MODE5 | OUTPUT | PRU */
-					0x03c 0x36	/* GPMC_AD15.pr1_pru0_pru_r31_15, MODE6 | INPUT | PRU*/
-					0x038 0x36	/* GPMC_AD14.pr1_pru0_pru_r31_14, MODE6 | INPUT | PRU*/
+					0x03c 0x26	/* GPMC_AD15.pr1_pru0_pru_r31_15, MODE6 | INPUT | PRU*/
+					0x038 0x26	/* GPMC_AD14.pr1_pru0_pru_r31_14, MODE6 | INPUT | PRU*/
 
 					//0x084 0x25	/* gpmc_csn2.pr1_pru1_pru_r30_13, MODE5 | OUTPUT | PRU */ --conflict with eMMC
 					//0x080 0x25	/* gpmc_csn1.pr1_pru1_pru_r30_12, MODE5 | OUTPUT | PRU */
