@@ -49,6 +49,27 @@ static u32 get_second_word()
 	return inst;
 }
 
+/* used to get value of a variable*/
+int get_var_val(int addr)
+{
+	if (addr > MAX_DATA){
+		if(addr < AIO_OFF){
+		//case DIO
+		//240 to 255 -> DIO[0] to DIO[15]
+		//************add some code here to take care of addr for spl array *******
+				//addr -= 1 (?)
+			addr -= DIO_OFF;
+			return GET_BIT(__R31, addr);
+		}
+	}
+
+	else{
+		return var_loc[addr];
+	}
+
+	return 0;
+}
+
 /*instruction handlers*/
 
 void dio_handler(int opcode, u32 inst)
@@ -60,22 +81,23 @@ void dio_handler(int opcode, u32 inst)
 		val1 = GET_BIT(inst, 23) ? var_loc[GET_BYTE(inst, 1)]: GET_BYTE(inst, 1);
 		val2 = GET_BIT(inst, 22) ? var_loc[GET_BYTE(inst, 0)]: GET_BYTE(inst, 0);
 	}
-
-	// "SET DIO[c], arr[v]"  orelse "SET DIO[v] , arr[v]"
-	val1 = (opcode == SET_DIO_b) ? GET_BYTE(inst, 2) : var_loc[GET_BYTE(inst,2)];
+	
+	else{	
+		// "SET DIO[c], arr[v]"  orelse "SET DIO[v] , arr[v]"
+		val1 = (opcode == SET_DIO_b) ? GET_BYTE(inst, 2) : var_loc[GET_BYTE(inst,2)];
 		
-	//array size check
-	int index = var_loc[GET_BYTE(inst, 0)];
-	if (var_loc[GET_BYTE(inst,1)] <= index ){
-		//error
-		if (single_command)
-			send_ret_value(0);
-		return;
+		//array size check -- this case same for both case
+		int index = var_loc[GET_BYTE(inst, 0)];
+		if (var_loc[GET_BYTE(inst,1)] <= index ){
+			//error
+			if (single_command)
+				send_ret_value(0);
+			return;
+		}
+		//if everything okay
+		int addr = GET_BYTE(inst, 1) + index + 1;
+		val2 = var_loc[addr];
 	}
-	//if everything okay
-	int addr = GET_BYTE(inst, 1) + index + 1;
-	val2 = var_loc[addr];
-
 	/* set hi*/
 	if(val2 && (val1 < MAX_DIO)){ 
         	__R30 = __R30 | ( 1 << val1);
@@ -158,10 +180,6 @@ void set_handler(int opcode, u32 inst)
 		if (op == 1){
 		//operand2 is of type V
 			addr2 = GET_BYTE(inst,0);
-		//	send_ret_value(100 + addr2); //*****************
-		//	send_ret_value(100 + GET_BYTE(inst, 1));
-		//	send_ret_value(100 + GET_BYTE(inst, 2));
-		//	send_ret_value(100 + GET_BYTE(inst, 3)); //*************
 			var_loc[addr1] = var_loc[addr2];
 		        if(single_command)
 		                send_ret_value(var_loc[addr2]);
@@ -207,7 +225,7 @@ void wait_goto_get_handler(int opcode, u32 inst)
 
 	else if (op == 1){
 	/* WAIT v*/
-		val = var_loc[GET_BYTE(inst, 0)];
+		val = get_var_val(GET_BYTE(inst, 0));
 	}
 
 	else{
@@ -221,7 +239,7 @@ void wait_goto_get_handler(int opcode, u32 inst)
                         return;
                 }
 
-		val = var_loc[GET_BYTE(inst,1) + index + 1];
+		val = get_var_val(GET_BYTE(inst,1) + index + 1);
 	}
 	
 	if(opcode == WAIT)

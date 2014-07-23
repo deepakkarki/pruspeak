@@ -7,6 +7,13 @@
 /*max number of DIO pins*/
 #define MAX_DIO			12
 
+/* max data area */
+#define MAX_DATA		239
+
+/* start of DIO, AIO */
+#define DIO_OFF			240
+#define AIO_OFF			256
+
 /*extract a byte #pos from value */
 #define GET_BYTE(val, pos) \
 	(((val) >> ((pos)*8)) & 0xFF)

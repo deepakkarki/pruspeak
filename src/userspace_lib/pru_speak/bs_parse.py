@@ -12,7 +12,7 @@ from node import *
 #keeps track of next available memory offset to place a variable
 pru_var_count = 0
 #max variable slots
-PRU_VAR_AREA = 240 
+PRU_VAR_AREA = 239
 
 #size of each inst in the script
 #used by GOTO to find exact location to jump to
