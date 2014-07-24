@@ -253,7 +253,7 @@
 					pdbg  = <0x22400>;
 
 					firmware-elf;
-					firmware = "pru_firmware";
+					firmware = "pru0_firmware";
 
 					/* sysevents signaling ring activity (host, pru)*/
 					vring-sysev = <24 25>;
@@ -307,10 +307,15 @@
 					pctrl = <0x24000>;
 					pdbg  = <0x24400>;
 
-					//firmware-elf; --not yet
-					//firmware = "testpru1";
+					firmware-elf; 
+					firmware = "pru1_firmware";
 
-					/* NOTE: no resource table, no vrings for this one */
+                                        /* shared memory count */
+                                        shm-count = <2>;
+
+                                        /* corresponding size of each shm segment - in units of pages*/
+                                        shm-size = <1 1>;
+
 				};
 			};
 		};

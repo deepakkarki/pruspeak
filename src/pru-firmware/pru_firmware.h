@@ -90,3 +90,11 @@ typedef struct shared_data SD;
 
 SD *data_sock = (SD *)((void*)DPRAM_SHARED);
 
+/*extract a byte #pos from value */
+#define GET_BYTE(val, pos) \
+        (((val) >> ((pos)*8)) & 0xFF)
+
+/* extract a bit #pos from a value */
+#define GET_BIT(val, pos) \
+        (((val) >> (pos)) & 1)
+

@@ -105,11 +105,15 @@ void dio_handler(int opcode, u32 inst)
 	/* set hi*/
 	if(val2 && (val1 < MAX_DIO)){ 
         	__R30 = __R30 | ( 1 << val1);
+		data_sock->info[1] = 1;
+		data_sock->status[1] = 1;
         }
 
 	/* set low*/
         else{ 
         	__R30 = __R30 & ~( 1 << val1);
+		data_sock->info[1] = 0;
+		data_sock->status[1] = 1;
         }
 	
 	if(single_command)

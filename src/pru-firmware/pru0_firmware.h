@@ -1,3 +1,4 @@
+//ARM -> pru0
 #define EVENT_BIT               21
 #define IF_EVENT                PINTC_SRSR0 & (1 << EVENT_BIT)
 #define CLEAR_EVENT             (PINTC_SICR0 = EVENT_BIT)
@@ -13,14 +14,6 @@
 /* start of DIO, AIO */
 #define DIO_OFF			240
 #define AIO_OFF			256
-
-/*extract a byte #pos from value */
-#define GET_BYTE(val, pos) \
-	(((val) >> ((pos)*8)) & 0xFF)
-
-/* extract a bit #pos from a value */
-#define GET_BIT(val, pos) \
-	(((val) >> (pos)) & 1)
 
 /* 
 	sys calls ids
