@@ -1,6 +1,6 @@
 #define EVENT_BIT               21
 #define IF_EVENT                PINTC_SRSR0 & (1 << EVENT_BIT)
-#define CLEAR_EVENT             (PINTC_SRSR0 = EVENT_BIT)
+#define CLEAR_EVENT             (PINTC_SICR0 = EVENT_BIT)
 
 #define MS                      0x30d40 //number of clock cycles it takes for 1ms
 
@@ -132,4 +132,5 @@ extern void sc_downcall(int (*handler)(u32 nr, u32 arg0, u32 arg1, u32 arg2, u32
 #define NOT_64		73
 
 #define HALT		240
+
 

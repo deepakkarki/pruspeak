@@ -3,6 +3,8 @@ typedef int u32;
 volatile register unsigned int __R30;
 volatile register unsigned int __R31;
 
+#define NUM_PRU	2
+
 __far volatile char C0[0x300] __attribute__((cregister("C0", far)));
 #define PINTC(_reg) \
 	(*(volatile u32 *)((char *)&C0[_reg]))
@@ -72,4 +74,19 @@ __far volatile char C26[0x100] __attribute__((cregister("C26", near)));	/* PRUIE
 
 #define false	0
 #define true	1
+
+#define DPRAM_SHARED	0x00010000
+
+/* structure used to pass information pru0 <--> pru1 
+   status[i] => pru<i> has information for it to read
+   info[i] => the data pru<i> has received
+*/
+struct shared_data{
+	int status[NUM_PRU];	/* valid info waiting in info */
+	int info[NUM_PRU];	/* the information to be read */
+};
+
+typedef struct shared_data SD;
+
+SD *data_sock = (SD *)((void*)DPRAM_SHARED);
 
