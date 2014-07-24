@@ -53,7 +53,7 @@ static u32 get_second_word()
 int get_var_val(int addr)
 {
 	if (addr > MAX_DATA){
-		if(addr < IO_OFF){
+		if(addr < AIO_OFF){
 		//case DIO
 		//240 to 255 -> DIO[0] to DIO[15]
 			
@@ -134,9 +134,9 @@ void set_handler(int opcode, u32 inst)
 	/* SET V, V */
 		addr1 = GET_BYTE(inst,2);
 		addr2 = GET_BYTE(inst,0);
-		var_loc[addr1] = var_loc[addr2];
+		var_loc[addr1] = get_var_val(addr2);
 	        if(single_command)
-	                send_ret_value(var_loc[addr2]);
+	                send_ret_value(var_loc[addr1]);
 
 	}
 
@@ -160,7 +160,6 @@ void set_handler(int opcode, u32 inst)
                         	return;
                 	} 
 			addr1 = GET_BYTE(inst,1) + index + 1;
-			//send_ret_value(100 + addr1); //*****************
 		}
 
 		u32 old_inst = inst;
@@ -169,9 +168,7 @@ void set_handler(int opcode, u32 inst)
 		inst = get_second_word();
 		
 		op = ((GET_BYTE(old_inst, 2) >> 4) & 3); //get bits 4 and 5 of byte2
-	
-		//send_ret_value(100 + op); //*****************
-	
+		
 		if (op == 0){
 		//operand2 is of type C
 			val2 = inst & 0xFF;
@@ -184,9 +181,9 @@ void set_handler(int opcode, u32 inst)
 		if (op == 1){
 		//operand2 is of type V
 			addr2 = GET_BYTE(inst,0);
-			var_loc[addr1] = var_loc[addr2];
+			var_loc[addr1] = get_var_val(addr2);
 		        if(single_command)
-		                send_ret_value(var_loc[addr2]);
+		                send_ret_value(var_loc[addr1]);
 
 		}
 
@@ -201,9 +198,9 @@ void set_handler(int opcode, u32 inst)
                                 return;
                         }
                         addr2 = GET_BYTE(inst,1) + index + 1;
-			var_loc[addr1] = var_loc[addr2];
+			var_loc[addr1] = get_var_val(addr2);
                         if(single_command)
-                                send_ret_value(var_loc[addr2]);
+                                send_ret_value(var_loc[addr1]);
 		}
 
 	}
@@ -277,7 +274,7 @@ void if_handler(int opcode, u32 inst)
 
 	else if(op == 1){
 	/* operand1 is of type V */
-		val1 = var_loc[GET_BYTE(inst, 0)];
+		val1 = get_var_val(GET_BYTE(inst, 0));
 	}
 
 	else{
@@ -292,7 +289,7 @@ void if_handler(int opcode, u32 inst)
 	        	return;
 	        }
 
-                val1 = var_loc[GET_BYTE(inst,1) + index + 1];
+                val1 = get_var_val(GET_BYTE(inst,1) + index + 1);
 	}
 
 	u32 old_inst = inst; //old_inst is the 1st 32 bits of the inst.
@@ -311,7 +308,7 @@ void if_handler(int opcode, u32 inst)
 
         else if(op == 1){
         /* operand2 is of type V */
-                val2 = var_loc[GET_BYTE(inst, 0)];
+                val2 = get_var_val(GET_BYTE(inst, 0));
         }
 
         else{
@@ -326,7 +323,7 @@ void if_handler(int opcode, u32 inst)
                         return;
                 }
 
-                val2 = var_loc[GET_BYTE(inst,1) + index + 1];
+                val2 = get_var_val(GET_BYTE(inst,1) + index + 1);
         }
 
         /*** GET val3 from second part of the inst ***/
@@ -340,7 +337,7 @@ void if_handler(int opcode, u32 inst)
 
         else if(op == 1){
         /* operand3 is of type V */
-                val3 = var_loc[GET_BYTE(inst, 2)];
+                val3 = get_var_val(GET_BYTE(inst, 2));
         }
 
         else{
@@ -355,7 +352,7 @@ void if_handler(int opcode, u32 inst)
                         return;
                 }
 
-                val3 = var_loc[GET_BYTE(inst,3) + index + 1];
+                val3 = get_var_val(GET_BYTE(inst,3) + index + 1);
         }
 	
 	/* calculate the result based on rel_op 
@@ -430,7 +427,7 @@ void math_handler(int opcode, u32 inst)
 	        else if(op == 1){
 	        /* operand1 is of type V */
 			addr = GET_BYTE(inst,0);
-	                val1 = var_loc[addr];
+	                val1 = get_var_val(addr);
 	        }
 	
 	        else{
@@ -445,7 +442,7 @@ void math_handler(int opcode, u32 inst)
 	                        return;
 	                }
 
-        	        val1 = var_loc[GET_BYTE(inst,1) + index + 1];
+        	        val1 = get_var_val(GET_BYTE(inst,1) + index + 1);
 	        }	
 		
 		u32 old_inst = inst; //old_inst is the 1st 32 bits of the inst.
@@ -464,7 +461,7 @@ void math_handler(int opcode, u32 inst)
 	
 	        else if(op == 1){
 	        /* operand2 is of type V */
-	                val2 = var_loc[GET_BYTE(inst, 0)];
+	                val2 = get_var_val(GET_BYTE(inst, 0));
 	        }
 	
 	        else{
@@ -479,7 +476,7 @@ void math_handler(int opcode, u32 inst)
 	                        return;
 	                }
 
-	                val2 = var_loc[GET_BYTE(inst,1) + index + 1];
+	                val2 = get_var_val(GET_BYTE(inst,1) + index + 1);
 	        }
 	}
 	
