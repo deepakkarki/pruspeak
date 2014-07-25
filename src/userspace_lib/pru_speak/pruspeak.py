@@ -66,7 +66,8 @@ class PruSpeak:
 					return return_values.append(-1)
 			
 			elif inst == 'RUN':
-				if self.script_code and (not self.script_mode) :
+				if self.script_code and (not self.script_mode):
+						print self.script_code
 						kernel_lib.load(self.script_code)
 						kernel_lib.execute()
 				else :
@@ -79,6 +80,7 @@ class PruSpeak:
 			elif inst == 'ABORT':
 				with open(kernel_lib.ABORT, "w") as f:
 					f.write("1")
+				kernel_lib.ret_counter = 1
 		
 			elif inst == 'SYSTEM':
 				with open(kernel_lib.STATUS, "r") as f:

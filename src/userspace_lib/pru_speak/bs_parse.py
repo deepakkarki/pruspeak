@@ -725,7 +725,7 @@ def p_inst_NOT(p):
 
 def p_inst_HALT(p):
 	'''inst : HALT'''
-	p[0] = 0xF0
+	p[0] = 0xF0000000
 
 def p_val_INT(p):
 	'''val : INT'''

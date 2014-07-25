@@ -9,8 +9,9 @@ SINGLE_INST	=	HOME + "pru_speak_single_cmd"
 SINGLE_INST_64	=	HOME + "pru_speak_single_cmd_64"
 ABORT		=	HOME + "pru_speak_abort"
 DEBUG		=	HOME + "pru_speak_debug"
-CODE_MEM_OFF	=	None
-RET_MEM_OFF	=	None	#base address for ret value shm
+STATUS		=	HOME + "pru_speak_status"
+CODE_MEM_OFF	=	0#x9f0c2000
+RET_MEM_OFF	=	0#x9f0c3000	#base address for ret value shm
 ret_counter	=	1	#like a top of stack pointer
 
 def _mem_init( ):
@@ -72,10 +73,12 @@ def _get_return_value():
 		ret_shm = mmap(f.fileno(), PAGE_SIZE, offset=RET_MEM_OFF)
 		tos = ret_shm[0:4]
 		tos = struct.unpack("<L", tos)[0]
-		#print "ret_block tos : ", tos
+		print "ret_block tos : ", tos , " ret_counter : ", ret_counter
 
 		while ret_counter == tos :
-			print "waiting..."
+			tos = ret_shm[0:4]
+			tos = struct.unpack("<L", tos)[0]
+			#print "waiting..."
 			#wait till PRU gives a return value
 
 		ret_value = ret_shm[ret_counter*4 : (ret_counter*4)+4]
