@@ -3,7 +3,6 @@
 
 int var_loc[256];
 void wait(int);
-int flag = 0; /* debug */
 
 static void send_ret_value(int val)
 {
@@ -14,12 +13,6 @@ static void send_ret_value(int val)
 
 	/* write val to the loc pointed to by current ret_pointer */
 	*(shm_ret + ret_pointer) = val;
-//####################################hack-remove-after-trying##############################
-	if (ret_pointer >1000)
-	{
-		return;
-	}
-//####################################end-of-crazy-hack-------##############################
 
 	/*inc the ret_pointer to point to the next empty loc*/
 	ret_pointer = (ret_pointer % 1023) + 1; 
@@ -32,7 +25,6 @@ static void send_ret_value(int val)
 
 	PRUCFG_SYSCFG = PRUCFG_SYSCFG | SYSCFG_STANDBY_INIT;
 
-	//inst_pointer++;  ---> how the heck did this get here?
 }
 
 /* to fetch 2nd part of 64 bit instruction */
@@ -51,7 +43,6 @@ static u32 get_second_word()
 	/* when the 64 bit inst is a single_inst */
 	else {
 		inst = single_command_2;
-		//send_ret_value(200+ single_command_2); //************ 
 	}
 	
 	return inst;
@@ -115,7 +106,6 @@ void dio_handler(int opcode, u32 inst)
         	__R30 = __R30 | ( 1 << val1);
 		data_sock->info[1] = 1;
 		data_sock->status[1] = 1;
-		send_ret_value(91);
         }
 
 	/* set low*/
@@ -123,7 +113,6 @@ void dio_handler(int opcode, u32 inst)
         	__R30 = __R30 & ~( 1 << val1);
 		data_sock->info[1] = 0;
 		data_sock->status[1] = 1;
-		//send_ret_value(90);
         }
 	
 	if(single_command)
@@ -258,10 +247,7 @@ void wait_goto_get_handler(int opcode, u32 inst)
 	}
 	
 	if(opcode == WAIT){
-		send_ret_value(79);
 		wait(val);
-		send_ret_value(80);
-		flag = 1;
 	}
 
 	else if (opcode == GOTO)
@@ -610,11 +596,8 @@ void check_event(void)
 		sc_downcall(handle_downcall);
 	}
 	
-	if (flag) /* debug */
-		send_ret_value(111);
 
 	if(PIEP_CMP_STATUS & 1){
-		send_ret_value(82);
 		/* disable the timer */
 		PIEP_GLOBAL_CFG &= ~(GLOBAL_CFG_CNT_ENABLE);
 
@@ -657,7 +640,6 @@ void wait(int ms)
 
         /* start the timer */
         PIEP_GLOBAL_CFG |= GLOBAL_CFG_CNT_ENABLE;	
-	send_ret_value(81);
 }
 
 void execute_instruction()
@@ -668,14 +650,13 @@ void execute_instruction()
 		inst = *(shm_code + inst_pointer);
 		PRUCFG_SYSCFG = PRUCFG_SYSCFG | SYSCFG_STANDBY_INIT;
 		inst_pointer++;
-		send_ret_value(100 + inst_pointer);
 	}
 	else {
 		inst = single_command;
 	}
-
+	
 	int opcode = inst >> 24; //most significant byte contains the cmd 
-	send_ret_value(opcode);
+
 	switch(opcode){
 
 		case SET_DIO_a:
@@ -717,11 +698,9 @@ void execute_instruction()
 		break;
 */		
 		case HALT:
-			send_ret_value(98);
 			is_waiting = 0;
 			is_executing = 0;
 			inst_pointer = 0;
-			send_ret_value(99); /* debug */
 		break;
 
 		default:
@@ -731,7 +710,6 @@ void execute_instruction()
 	}
 	
 	single_command = 0; /*incase there was a single command executed this time, set to zero*/
-	if (flag) send_ret_value(81);
 }
 
 void timer_init()
@@ -759,11 +737,8 @@ int main()
 			execute_instruction();
 			send_ret_value(is_executing);
 			send_ret_value(single_command);
-			send_ret_value(199);
 		}
 		
-		if (flag) /* debug */
-                        send_ret_value(122);
 	}
 
 	return 0;

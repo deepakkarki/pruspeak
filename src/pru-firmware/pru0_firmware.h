@@ -124,6 +124,6 @@ extern void sc_downcall(int (*handler)(u32 nr, u32 arg0, u32 arg1, u32 arg2, u32
 #define NOT_32		72
 #define NOT_64		73
 
-#define HALT		240
+#define HALT		127
 
 

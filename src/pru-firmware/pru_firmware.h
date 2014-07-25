@@ -1,4 +1,4 @@
-typedef int u32;
+typedef unsigned int u32;
 
 volatile register unsigned int __R30;
 volatile register unsigned int __R31;
