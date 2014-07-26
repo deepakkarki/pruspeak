@@ -818,7 +818,7 @@ Simple instruction with no operands
 
 **opcode**
 ```c
-0xF0 (240)
+0x7F (127)
 ```
 
 **operation**
@@ -831,7 +831,7 @@ If no script is running, this instruction does nothing.
 ```
 OPCODE, unused, unused, unused
 
-Byte3   : OPCODE : 1111-0000 (fixed)
+Byte3   : OPCODE : 0111-1111 (fixed)
 Byte2-0 : unused : unused
 ```
 
