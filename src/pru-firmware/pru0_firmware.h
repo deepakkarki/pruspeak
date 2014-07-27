@@ -1,7 +1,6 @@
 //ARM -> pru0
-#define EVENT_BIT               21
+#define EVENT_BIT               21 //keep for now, later replace with 'EV_ARM_PRU0'
 #define IF_EVENT                PINTC_SRSR0 & (1 << EVENT_BIT)
-#define CLEAR_EVENT             (PINTC_SICR0 = EVENT_BIT)
 
 #define MS                      0x30d40 //number of clock cycles it takes for 1ms
 

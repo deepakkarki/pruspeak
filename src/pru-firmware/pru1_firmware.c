@@ -1,7 +1,6 @@
 #include "pru_firmware.h"
 #include "pru1_firmware.h"
 
-static int info;
 
 int check_event(void)
 {
@@ -20,18 +19,21 @@ int check_event(void)
 
 int main()
 {
-	__R30 = 0x00;
-        while(1)
-        {
-                if (check_event()){
-   	        	if (info)
-        			__R30 = 0xFFFF;
-			else
-				__R30 = 0x0000;
-		}
-		
-        }
+        //init the structs in the array
 
-        return 0;
+	while(1){
+		//	_								_
+		//	|	update pins						|
+		//	|	inc the counter						|
+		//	|	if (EV_PRU0_PRU1 && count == 10) : update pru_sys[]	|
+		//	_ 								_
+			
+			//***till here no more than 2K inst***
+			
+		//	loop along till timer time is up
+		//	restart timer
+			
+	}
+	return 0;
 }
 
