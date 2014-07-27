@@ -26,7 +26,7 @@ typedef struct pwm_unit PWM;
 /* array that represents all the soft PWM ports*/
 PWM pwm_sys[CHANNELS];
 
-int units_elapsed;
+int units_elapsed = 0;
 
 
 //######################ALGORITHM############################

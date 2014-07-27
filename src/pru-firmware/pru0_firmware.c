@@ -104,15 +104,15 @@ void dio_handler(int opcode, u32 inst)
 	/* set hi*/
 	if(val2 && (val1 < MAX_DIO)){ 
         	__R30 = __R30 | ( 1 << val1);
-		data_sock->info[1] = 1;
-		data_sock->status[1] = 1;
+		//data_sock->info[1] = 1;
+		//data_sock->status[1] = 1;
         }
 
 	/* set low*/
         else{ 
         	__R30 = __R30 & ~( 1 << val1);
-		data_sock->info[1] = 0;
-		data_sock->status[1] = 1;
+		//data_sock->info[1] = 0;
+		//data_sock->status[1] = 1;
         }
 	
 	if(single_command)
@@ -599,10 +599,10 @@ void check_event(void)
 
 	if(PIEP_CMP_STATUS & 1){
 		/* disable the timer */
-		PIEP_GLOBAL_CFG &= ~(GLOBAL_CFG_CNT_ENABLE);
+		//PIEP_GLOBAL_CFG &= ~(GLOBAL_CFG_CNT_ENABLE);
 
 		/* reset the timer to 0 (timer is a clear to write reg) */
-		PIEP_COUNT = 0XFFFFFFFF;
+		//PIEP_COUNT = 0XFFFFFFFF;
 
 		/* set CMP0 value back to zero */
 		PIEP_CMP_CMP0 = 0;
@@ -626,7 +626,7 @@ void check_event(void)
 void wait(int ms)
 {	
 	/* set the CMP0 reg value */
-	PIEP_CMP_CMP0 =  MS * ms;
+	//PIEP_CMP_CMP0 =  MS * ms;
 
 	/* change execution state of the PRU */
 	is_executing = false;
@@ -635,11 +635,14 @@ void wait(int ms)
 	/* enable events from CMP0*/
 	PIEP_CMP_CFG |= CMP_CFG_CMP_EN(0);
 
+        /* set the CMP0 reg value */
+        PIEP_CMP_CMP0 =  ((MS * ms) + PIEP_COUNT);// % 0xFFFFFFFF;//is the % op needed at all?
+
 	/* clear the timer event for CMP0 incase it has been already set by mistake */
 	PIEP_CMP_STATUS = CMD_STATUS_CMP_HIT(0);
 
         /* start the timer */
-        PIEP_GLOBAL_CFG |= GLOBAL_CFG_CNT_ENABLE;	
+        //PIEP_GLOBAL_CFG |= GLOBAL_CFG_CNT_ENABLE;	
 }
 
 void execute_instruction()
@@ -718,10 +721,13 @@ void timer_init()
         PIEP_GLOBAL_CFG = GLOBAL_CFG_DEFAULT_INC(1) | GLOBAL_CFG_CMP_INC(1);
 
         /* Compare registers enable, enables signal from CMP0, on CMP0 --> counter is reset */
-        PIEP_CMP_CFG |=  RESET_ON_CMP0_EVENT;
+        //PIEP_CMP_CFG |=  RESET_ON_CMP0_EVENT; -- cant afford to do this when timer is shared
 	
 	/* clear the counter status bit for CMP0 register, i.e. PIEP_CMP_STATUS[0] */
         PIEP_CMP_STATUS = CMD_STATUS_CMP_HIT(0); /* clear the interrupt */
+
+        /* start the timer */
+	PIEP_GLOBAL_CFG |= GLOBAL_CFG_CNT_ENABLE;
 }
 
 int main()
