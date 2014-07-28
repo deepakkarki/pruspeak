@@ -1,7 +1,10 @@
-#define PRU			1
+#define PRU		1
 
 //pru0 -> pru1
 #define IF_EVENT                (CHECK_EVENT(EV_PRU0_PRU1)) // || CHECK_EVENT(EV_ARM_PRU0)) --not reqd as of now
+
+/* The number of clock cycles it takes for 1 micro sec*/
+#define US		0xc8 //dec val = 200
 
 /* The number of PWM channels */
 #define CHANNELS        8
@@ -25,8 +28,6 @@ typedef struct pwm_unit PWM;
 
 /* array that represents all the soft PWM ports*/
 PWM pwm_sys[CHANNELS];
-
-int units_elapsed = 0;
 
 
 //######################ALGORITHM############################

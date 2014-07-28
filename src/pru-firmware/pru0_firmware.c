@@ -3,6 +3,7 @@
 
 int var_loc[256];
 void wait(int);
+int pwm_val = 0;
 
 static void send_ret_value(int val)
 {
@@ -104,8 +105,9 @@ void dio_handler(int opcode, u32 inst)
 	/* set hi*/
 	if(val2 && (val1 < MAX_DIO)){ 
         	__R30 = __R30 | ( 1 << val1);
-		//data_sock->info[1] = 1;
-		//data_sock->status[1] = 1;
+		data_sock->info[PRU1][0] = pwm_val++; //pru1-channel0 = pwm_val% 
+		//raise signal
+		SIGNAL_EVENT(EV_PRU0_PRU1);
         }
 
 	/* set low*/
