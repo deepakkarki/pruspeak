@@ -30,6 +30,7 @@ int main()
 	for(i = 0; i < CHANNELS; i++ ){
 		pwm_sys[i].pin = i;
 		pwm_sys[i].hi_time = 0;
+		data_sock->info[PRU][i] = 0;
 	}
 
 	//timer initializations
@@ -44,14 +45,7 @@ int main()
 		//	|	update pins						|
 			i = (pwm_sys[0].hi_time > units_elapsed);
 			j |= i << pwm_sys[0].pin;
-			j |= i << pwm_sys[1].pin; //mimic pwm for pin 0
-			j |= i << pwm_sys[2].pin; //mimic pwm for pin 0
-			j |= i << pwm_sys[3].pin; //mimic pwm for pin 0
-			j |= i << pwm_sys[4].pin; //mimic pwm for pin 0
-			j |= i << pwm_sys[5].pin; //mimic pwm for pin 0
-			j |= i << pwm_sys[6].pin; //mimic pwm for pin 0
-			j |= i << pwm_sys[7].pin; //mimic pwm for pin 0
-	#if 0
+	#if 1
 			i = (pwm_sys[1].hi_time > units_elapsed);
 			j |= i << pwm_sys[1].pin;
 
