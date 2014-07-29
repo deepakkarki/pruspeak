@@ -5,6 +5,7 @@
 
 /* The number of clock cycles it takes for 1 micro sec*/
 #define US		0xc8 //dec val = 200
+#define MS                      0x30d40
 
 /* The number of PWM channels */
 #define CHANNELS        8

@@ -4,7 +4,9 @@ volatile register unsigned int __R30;
 volatile register unsigned int __R31;
 
 /* The number of PRU's that exist */
-#define NUM_PRU	2
+#define NUM_PRU		2
+#define PRU0		0
+#define PRU1		1
 
 /* Events list */
 #define EV_PRU0_PRU1	17
@@ -76,6 +78,7 @@ __far volatile char C26[0x100] __attribute__((cregister("C26", near)));	/* PRUIE
 #define PIEP_COMPEN		PIEP(0x0008)
 #define PIEP_COUNT		PIEP(0x000C)
 #define RESET_COUNTER		PIEP_COUNT = 0XFFFFFFFF
+
 #define PIEP_CMP_CFG		PIEP(0x0040)
 #define  CMP_CFG_CMP0_RST_CNT_EN	(1 << 0)
 #define  CMP_CFG_CMP_EN_S		1

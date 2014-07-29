@@ -26,7 +26,7 @@ void timer_init()
 int main()
 {
         //init the structs in the array
-	int i;
+	int i,j, flag = 0;
 	for(i = 0; i < CHANNELS; i++ ){
 		pwm_sys[i].pin = i;
 		pwm_sys[i].hi_time = 0;
@@ -35,37 +35,52 @@ int main()
 	//timer initializations
 	timer_init();
 
+	pwm_sys[0].hi_time = 5;
+
 	while(1){
+			__R30 = 0xfc; // pin 0,1 low
+			/* can we store all 8 channel status in var an assign to R30 at once? that'll be better */
+			j = 0;
 		//	_								_
 		//	|	update pins						|
-			i = (pwm_sys[0].hi_time > units_elapsed)? 1 : 0;
-			__R30 = i << pwm_sys[0].pin;
-		
+			i = (pwm_sys[0].hi_time > units_elapsed);
+			j |= i << pwm_sys[0].pin;
+			j |= i << pwm_sys[1].pin; //mimic pwm for pin 0
+			j |= i << pwm_sys[2].pin; //mimic pwm for pin 0
+			j |= i << pwm_sys[3].pin; //mimic pwm for pin 0
+			j |= i << pwm_sys[4].pin; //mimic pwm for pin 0
+			j |= i << pwm_sys[5].pin; //mimic pwm for pin 0
+			j |= i << pwm_sys[6].pin; //mimic pwm for pin 0
+			j |= i << pwm_sys[7].pin; //mimic pwm for pin 0
+	#if 0
 			i = (pwm_sys[1].hi_time > units_elapsed);
-			__R30 = i << pwm_sys[1].pin;
+			j |= i << pwm_sys[1].pin;
 
 			i = (pwm_sys[2].hi_time > units_elapsed);
-			__R30 = i << pwm_sys[2].pin;
+			j |= i << pwm_sys[2].pin;
 
 			i = (pwm_sys[3].hi_time > units_elapsed);
-			__R30 = i << pwm_sys[3].pin;
+			j |= i << pwm_sys[3].pin;
 
 			i = (pwm_sys[4].hi_time > units_elapsed);
-			__R30 = i << pwm_sys[4].pin;
+			j |= i << pwm_sys[4].pin;
 
 			i = (pwm_sys[5].hi_time > units_elapsed);
-			__R30 = i << pwm_sys[5].pin;
+			j |= i << pwm_sys[5].pin;
 
 			i = (pwm_sys[6].hi_time > units_elapsed);
-			__R30 = i << pwm_sys[6].pin;
+			j |= i << pwm_sys[6].pin;
 
 			i = (pwm_sys[7].hi_time > units_elapsed);
-			__R30 = i << pwm_sys[7].pin;
+			j |= i << pwm_sys[7].pin;
+	#endif
+			__R30 = j;
 
 		//	|	inc the counter						|
 			units_elapsed++;
 
 		//	|	if (EV_PRU0_PRU1 && count == 10) : update pru_sys[]	|
+	
 			if(units_elapsed == RESOLUTION){
 				units_elapsed = 0;
 
@@ -73,33 +88,34 @@ int main()
 
 					/* clear the system event */
                 			PINTC_SICR = EV_PRU0_PRU1; //17
-
+					
 					/* update the pru_sys array */
 					for(i=0; i<CHANNELS; i++)
                					pwm_sys[i].hi_time = data_sock->info[PRU][i];
 
-					__R30 = 0xff;
-					while(1){}
 				}
 
 			}
 		//	_ 								_
 			
 			//***till here no more than 2K inst***
-
+		
 			// loop along till timer is up	
 			while(!( PIEP_CMP_STATUS & (2) )){ //0b10
-				//the timer has gone off
-					//disable the event	|
-					//clear it		| --> are these 3 reqd.?
-					//enable		|
-
-					//reassign value cmp1
-					PIEP_CMP_CMP1 =  ((US * TIME_UNIT) + PIEP_COUNT);
-
-					/* clear the interrupt from cmp1  */
-					PIEP_CMP_STATUS = CMD_STATUS_CMP_HIT(1);
+				//just wait
 			}
+			
+			//the timer has gone off
+			//disable the event	|
+			//clear it		| --> are these 3 reqd.?
+			//enable		|
+			//__R30 = (j%2) << 1; //0b10
+			//j++;
+			//reassign value cmp1
+			PIEP_CMP_CMP1 =  ((US * TIME_UNIT) + PIEP_COUNT);
+
+			/* clear the interrupt from cmp1  */
+			PIEP_CMP_STATUS = CMD_STATUS_CMP_HIT(1);
 			
 	}
 
