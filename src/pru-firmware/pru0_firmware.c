@@ -105,23 +105,26 @@ void dio_handler(int opcode, u32 inst)
 	/* set hi*/
 	if(val2 && (val1 < MAX_DIO)){ 
         	__R30 = __R30 | ( 1 << val1);
-
-		//test for PWM - remove later on!
-		data_sock->info[PRU1][val1] = pwm_val++; //pru1-channelx = pwm_val% 
-
-		//raise signal
-		SIGNAL_EVENT(EV_PRU0_PRU1);
         }
 
 	/* set low*/
         else{ 
         	__R30 = __R30 & ~( 1 << val1);
-		//data_sock->info[1] = 0;
-		//data_sock->status[1] = 1;
         }
 	
 	if(single_command)
 		send_ret_value(val2 ? 1 : 0);
+}
+
+void pwm_handler(int opcode, u32 inst)
+{
+	//takes in only PWM[c], c. This will be merged with dio later
+	int val1, val2;
+	val1 = GET_BYTE(inst, 1);
+	val2 = GET_BYTE(inst, 0);
+
+	data_sock->info[PRU1][val1] = val2;
+	SIGNAL_EVENT(EV_PRU0_PRU1);
 }
 
 void set_handler(int opcode, u32 inst)
@@ -671,6 +674,10 @@ void execute_instruction()
 		case SET_DIO_b:
 		case SET_DIO_c:
 			dio_handler(opcode, inst);
+		break;
+	
+		case SET_PWM_a:
+			pwm_handler(opcode, inst);
 		break;
 
 		case SET_32_a:
