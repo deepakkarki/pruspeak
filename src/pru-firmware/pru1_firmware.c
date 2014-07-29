@@ -26,7 +26,7 @@ void timer_init()
 int main()
 {
         //init the structs in the array
-	int i,j, flag = 0;
+	int i,j;
 	for(i = 0; i < CHANNELS; i++ ){
 		pwm_sys[i].pin = i;
 		pwm_sys[i].hi_time = 0;
@@ -38,7 +38,6 @@ int main()
 	pwm_sys[0].hi_time = 5;
 
 	while(1){
-			__R30 = 0xfc; // pin 0,1 low
 			/* can we store all 8 channel status in var an assign to R30 at once? that'll be better */
 			j = 0;
 		//	_								_
