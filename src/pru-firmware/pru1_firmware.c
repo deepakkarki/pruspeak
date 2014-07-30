@@ -25,7 +25,7 @@ void timer_init()
 
 int main()
 {
-        //init the structs in the array
+        /* init the structs in the array and shm area */
 	int i,j;
 	for(i = 0; i < CHANNELS; i++ ){
 		pwm_sys[i].pin = i;
@@ -33,19 +33,21 @@ int main()
 		data_sock->info[PRU][i] = 0;
 	}
 
-	//timer initializations
+	/* timer initializations */
 	timer_init();
 
-	pwm_sys[0].hi_time = 5;
+	pwm_sys[0].hi_time = 5; //just for test purposes
 
+	/* main soft-pwm generation loop */
 	while(1){
-			/* can we store all 8 channel status in var an assign to R30 at once? that'll be better */
 			j = 0;
-		//	_								_
-		//	|	update pins						|
+
+		/* update pins */
+	
+			//read the values of hi time 
 			i = (pwm_sys[0].hi_time > units_elapsed);
 			j |= i << pwm_sys[0].pin;
-	#if 1
+			
 			i = (pwm_sys[1].hi_time > units_elapsed);
 			j |= i << pwm_sys[1].pin;
 
@@ -66,15 +68,16 @@ int main()
 
 			i = (pwm_sys[7].hi_time > units_elapsed);
 			j |= i << pwm_sys[7].pin;
-	#endif
+			
+			//assign to the output
 			__R30 = j;
 
-		//	|	inc the counter						|
+		/* inc the counter */
 			units_elapsed++;
 
-		//	|	if (EV_PRU0_PRU1 && count == 10) : update pru_sys[]	|
-	
+		/* if one time period is over */
 			if(units_elapsed == RESOLUTION){
+				//reset the time unit count => start of new time period
 				units_elapsed = 0;
 
 				if (CHECK_EVENT(EV_PRU0_PRU1)){
@@ -89,25 +92,22 @@ int main()
 				}
 
 			}
-		//	_ 								_
+		 							
 			
-			//***till here no more than 2K inst***
+		/*** till here no more than 2K inst ***/
 		
-			// loop along till timer is up	
+		/* loop along till timer is up	*/
+		
 			while(!( PIEP_CMP_STATUS & (2) )){ //0b10
 				//just wait
 			}
 			
-			//the timer has gone off
-			//disable the event	|
-			//clear it		| --> are these 3 reqd.?
-			//enable		|
-			//__R30 = (j%2) << 1; //0b10
-			//j++;
+		/* the timer has gone off */
+			
 			//reassign value cmp1
 			PIEP_CMP_CMP1 =  ((US * TIME_UNIT) + PIEP_COUNT);
 
-			/* clear the interrupt from cmp1  */
+			//clear the interrupt from cmp1
 			PIEP_CMP_STATUS = CMD_STATUS_CMP_HIT(1);
 			
 	}
