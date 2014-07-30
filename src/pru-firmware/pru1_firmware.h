@@ -5,19 +5,20 @@
 
 /* The number of clock cycles it takes for 1 micro sec*/
 #define US		0xc8 //dec val = 200
-#define MS                      0x30d40
+#define MS		0x30d40
 
 /* The number of PWM channels */
 #define CHANNELS        8
 
-/* The time unit in terms of micro sec*/
-#define TIME_UNIT       10 //equivalent to 2K instructions
+/* The time unit in terms of micro sec */
+#define TIME_UNIT       5 //equivalent to 1K instructions
 
 /* The number of time units in one wave/time-period */
-#define RESOLUTION      10 //should be atleast 20 :(
+#define RESOLUTION      100 //should be atleast 20 :(
 
 /* time period of pwm o/p in micro seconds */
 #define TIME_PERIOD     ((TIME_UNIT) * (RESOLUTION))
+//freq of PWM = (10^6) / (TIME_PERIOD) ; 10^6 since it is micro sec
 
 /* basic pwm unit structure */
 struct pwm_unit{
