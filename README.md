@@ -13,6 +13,24 @@ The project consists of three main components
   * The remote proc device driver
   * The PRU firmware (PRU implementation of the BotSpeak interpreter)
 
+##Using
+```
+Installing
+==========
+
+Install ply (python lex and yacc) : pip install ply
+
+cd bin
+insmod pru_speak.ko
+echo BB-BONE-PRU-07 > /sys/devices/bone_capemgr.9/slots
+
+Running
+=======
+cd ../src/userspace_lib/
+python bs_shell.py
+[The PRU Speak shell is now opened :)] 
+```
+
 Botspeak Gammar in Extended Backus-Naur Form (EBNF) (http://en.wikipedia.org/wiki/Extended_Backus-Naur_Form)
 
 ```
