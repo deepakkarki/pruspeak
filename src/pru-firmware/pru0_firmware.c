@@ -119,12 +119,35 @@ void dio_handler(int opcode, u32 inst)
 void pwm_handler(int opcode, u32 inst)
 {
 	//takes in only PWM[c], c. This will be merged with dio later
-	int val1, val2;
-	val1 = GET_BYTE(inst, 1);
-	val2 = GET_BYTE(inst, 0);
+        int val1, val2;
+        if(opcode == SET_PWM_a){
+        /* SET PWM[c/v], c/v */
 
+                val1 = GET_BIT(inst, 23) ? var_loc[GET_BYTE(inst, 1)]: GET_BYTE(inst, 1);
+                val2 = GET_BIT(inst, 22) ? var_loc[GET_BYTE(inst, 0)]: GET_BYTE(inst, 0);
+        }
+
+        else{
+                // "SET PWM[c], arr[v]"  orelse "SET PWM[v] , arr[v]"
+                val1 = (opcode == SET_PWM_b) ? GET_BYTE(inst, 2) : var_loc[GET_BYTE(inst,2)];
+
+                //array size check -- this case same for both case
+                int index = var_loc[GET_BYTE(inst, 0)];
+                if (var_loc[GET_BYTE(inst,1)] <= index ){
+                        //error
+                        if (single_command)
+                                send_ret_value(0);
+                        return;
+                }
+                //if everything okay
+                int addr = GET_BYTE(inst, 1) + index + 1;
+                val2 = var_loc[addr];
+        }
+
+        /* set pwm value */
 	data_sock->info[PRU1][val1] = val2;
 	SIGNAL_EVENT(EV_PRU0_PRU1);
+	send_ret_value(val2);
 }
 
 void set_handler(int opcode, u32 inst)
