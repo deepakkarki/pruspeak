@@ -1,18 +1,11 @@
-/*
-* Copyright (C) 2013 Pantelis Antoniou <panto@antoniou-consulting.com>
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License version 2 as
-* published by the Free Software Foundation.
-*/
 /dts-v1/;
 /plugin/;
 
 / {
-	compatible = "ti,beaglebone", "ti,beaglebone-black";
+	compatible = "ti,beaglebone", "ti,beaglebone-black", "pru_speak,pru_speak";
 
 	/* identification */
-	part-number = "BB-BONE-PRU-04";
+	part-number = "BB-PRUSPEAK";
 	version = "00A0";
 
 	/* state the resources this cape uses */
@@ -111,7 +104,8 @@
 			#size-cells = <1>;
 
 			prurproc {
-				compatible = "ti,pru_speak";
+				//compatible = "ti,pru_speak";
+				compatible = "ti,pru-rproc";
 
 				pinctrl-names = "default";
 				pinctrl-0 = <&pru_pru_pins>;
@@ -238,6 +232,18 @@
 				/* the IDs of the downcalls the firmware expects for PWMs */
 				/* CONFIG=0, ENABLE=1, DISABLE=2 */
 				pru-pwm-dc-ids = <0 1 2>;
+				
+				/* pruspeak specific settings */
+				pruspeak {
+					
+					compatible = "pru_speak,pru_speak";
+
+					/* shared memory count */
+                                	shm-count = <2>;
+
+                                	/* corresponding size of each shm segment - in units of pages*/
+                                	shm-size = <1 1>;
+				}
 
 				/* definition for the first PRU */
 				pru0 {
@@ -259,10 +265,10 @@
 					vring-sysev = <24 25>;
 
 					/* shared memory count */
-					shm-count = <2>;
+					//shm-count = <2>;
 
 					/* corresponding size of each shm segment - in units of pages*/
-					shm-size = <1 1>;
+					//shm-size = <1 1>;
 			
 					resource_table {
 						resource-table;
@@ -280,17 +286,6 @@
 							vring-1 = <0 16 8 0>;
 						};
 
-//						pru0_rproc_rpmsg: pru0_vdev_rproc_rpmsg {
-//							vdev-rpmsg;
-//
-//							/* notification IDs are totally bogus */
-//							/* rproc will idr_alloc anyway */
-//
-//							notifyid = <9>;	/* <- bogus */
-//							/* da align num notifyid */
-//							vring-0 = <0 16 512 0>;
-//							vring-1 = <0 16 512 0>;
-//						};
 					};
 				};
 
@@ -311,10 +306,10 @@
 					firmware = "pru1_firmware";
 
                                         /* shared memory count */
-                                        shm-count = <2>;
+                                        //shm-count = <2>;
 
                                         /* corresponding size of each shm segment - in units of pages*/
-                                        shm-size = <1 1>;
+                                        //shm-size = <1 1>;
 
 				};
 
