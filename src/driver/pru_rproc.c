@@ -2364,9 +2364,9 @@ static int pruproc_create_devices(struct pruproc *pp)
 
 /* PRU Speak code */
 
-static int pruspeak_downcall_idx(struct pruproc *pp, int idx, u32 nr, u32 arg0, u32 arg1, u32 arg2, u32 arg3, u32 arg4)
+static int pruspeak_downcall_idx(int idx, u32 nr, u32 arg0, u32 arg1, u32 arg2, u32 arg3, u32 arg4)
 {
-        return pru_downcall_idx(pp, idx, nr, arg0, arg1, arg2, arg3, arg4);
+        return pru_downcall_idx(pp_ps, idx, nr, arg0, arg1, arg2, arg3, arg4);
 }
 
 EXPORT_SYMBOL(pruspeak_downcall_idx);
