@@ -31,7 +31,11 @@
 #include <linux/firmware.h>
 #include "pru_speak.h"
 
+//1. this is static for now, should just make it as a part of private data of pdev
+//2. also ps_dev should have a device *dev_rproc element to get exported dev from rproc
+//TODO : 2nd first
 static struct pru_speak *ps_dev;
+
 
 static ssize_t pru_speak_debug(int idx, struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
@@ -223,8 +227,6 @@ static ssize_t pru_speak_single_cmd0_64(struct device *dev, struct device_attrib
         return pru_speak_single_cmd_64(0, dev, attr, buf, count);
 }
 
-static DEVICE_ATTR(load, S_IWUSR, NULL, pruproc_store_load);
-static DEVICE_ATTR(reset, S_IWUSR, NULL, pruproc_store_reset);
 static DEVICE_ATTR(pru_speak_debug, S_IWUSR, NULL, pru_speak_debug0);
 static DEVICE_ATTR(pru_speak_shm_init, S_IWUSR | S_IRUGO, pru_speak_shm_init0, NULL);
 static DEVICE_ATTR(pru_speak_execute, S_IWUSR, NULL, pru_speak_execute0);
@@ -233,14 +235,42 @@ static DEVICE_ATTR(pru_speak_status, S_IRUGO, pru_speak_status0, NULL);
 static DEVICE_ATTR(pru_speak_single_cmd, S_IWUSR, NULL, pru_speak_single_cmd0);
 static DEVICE_ATTR(pru_speak_single_cmd_64, S_IWUSR, NULL, pru_speak_single_cmd0_64);
 
-//remove() goes here
-	//free shm
-	//free sysfs
+static struct attribute *pru_speak_attributes[] = {
+	&dev_attr_pru_speak_debug.attr,
+	&dev_attr_pru_speak_shm_init.attr,
+	&dev_attr_pru_speak_execute.attr,
+	&dev_attr_pru_speak_abort.attr,
+	&dev_attr_pru_speak_status.attr,
+	&dev_attr_pru_speak_single_cmd.attr,
+	&dev_attr_pru_speak_single_cmd_64.attr,
+	NULL
+};
 
-//probe( ) goes here
-static int pruproc_probe(struct platform_device *pdev)
+static struct attribute_group pru_speak_attr_group = {
+	.attrs = pru_speak_attributes
+};
+
+static int pru_speak_remove(struct platform_device *pdev)
 {
-	struct device *dev = &pdev->dev;
+	struct device *dev = &pdev->dev; //export device from pru_proc? -- need for sysfs
+	int i;
+	//free the pru speak data struct
+	kfree(ps_dev);
+
+	//free the shm segments
+	for(i=0; i < ps_dev->shm_count; i++){
+		kfree(ps_dev->shm[i].vaddr);
+	}
+
+	//remove all the sysfs entries
+	sysfs_remove_group(&dev->kobj, &pru_speak_attr_group);
+
+	return 0;
+}
+
+static int pru_speak_probe(struct platform_device *pdev)
+{
+	struct device *dev = &pdev->dev; //export device from pru_proc? -- need for sysfs
 	struct device_node *node = dev->of_node;
 	int shm_count, err, x;
 	int tmparr[MAX_SHARED];
@@ -287,9 +317,21 @@ static int pruproc_probe(struct platform_device *pdev)
 		}
 	}
 
+	ps_dev->shm_count = shm_count;
+
 	printk("SHM initalization sequence is now complete\n");
 
 	//create sysfs
+	err = sysfs_create_group(&dev->kobj, &pru_speak_attr_group);
+	if (err) {
+		dev_err("creation of sysfs failed!\n");
+		goto err_fail;
+	}
+
+	return 0;
+
+	err_fail:
+		return -1;
 }
 
 
