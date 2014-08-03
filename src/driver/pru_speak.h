@@ -34,8 +34,10 @@ struct pru_shm {
  * NOTE : reqd. data as of now is just the shm units, 
  * 	all other data is abstracted and is concern of pru_rproc
  */
-struct pru_speak {
+struct pru_speak{
 	struct pru_shm shm[MAX_SHARED];
+	int shm_count;
+	struct platform_device *pdev_rproc; //pointer to pdev of pp_ps in pru_rproc.c
 };
 
 #endif

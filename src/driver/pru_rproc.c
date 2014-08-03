@@ -2371,6 +2371,16 @@ static int pruspeak_downcall_idx(int idx, u32 nr, u32 arg0, u32 arg1, u32 arg2, 
 
 EXPORT_SYMBOL(pruspeak_downcall_idx);
 
+static struct platform_device *pruspeak_get_pdev_rproc()
+{
+	if(pp_bs){
+		return pp_bs->pdev;
+	}
+	return -1;
+}
+
+EXPORT_SYMBOL(pruspeak_get_pdev_rproc);
+
 static void pruproc_pruspeak_init_bindings(struct pruproc *pp)
 {
         pp_bs = pp;

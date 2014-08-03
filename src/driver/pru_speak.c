@@ -32,8 +32,6 @@
 #include "pru_speak.h"
 
 //1. this is static for now, should just make it as a part of private data of pdev
-//2. also ps_dev should have a device *dev_rproc element to get exported dev from rproc
-//TODO : 2nd first
 static struct pru_speak *ps_dev;
 
 
@@ -270,14 +268,21 @@ static int pru_speak_remove(struct platform_device *pdev)
 
 static int pru_speak_probe(struct platform_device *pdev)
 {
-	struct device *dev = &pdev->dev; //export device from pru_proc? -- need for sysfs
+	struct device *dev = &pdev->dev; 
 	struct device_node *node = dev->of_node;
 	int shm_count, err, x;
 	int tmparr[MAX_SHARED];
 
 	ps_dev = kzalloc(sizeof(*ps_dev), GFP_KERNEL);
+
+	ps_dev->pdev_rproc = pruspeak_get_pdev_rproc();
+	if(ps_dev->pdev_rproc == -1){
+		dev_error(dev, "can't get pdev_rproc\n");
+		goto err_fail;
+	}
 	
-	//read of node properties
+	platform_set_drvdata(pdev, ps_dev);
+
 	/* get the number of shared memory segment */
 	err = of_property_read_u32(node, "shm-count", &shm_count);
 
@@ -322,6 +327,7 @@ static int pru_speak_probe(struct platform_device *pdev)
 	printk("SHM initalization sequence is now complete\n");
 
 	//create sysfs
+	struct device *pruproc_dev = &(ps_dev->pdev->dev);
 	err = sysfs_create_group(&dev->kobj, &pru_speak_attr_group);
 	if (err) {
 		dev_err("creation of sysfs failed!\n");
