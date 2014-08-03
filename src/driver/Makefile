@@ -1,3 +1,4 @@
+obj-m += pru_rproc2.o
 obj-m += pru_speak.o
 
 all:

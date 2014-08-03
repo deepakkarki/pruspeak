@@ -22,11 +22,6 @@
 
 #include <linux/pwm.h>
 
-//#include "remoteproc_internal.h"
-
-#ifndef REMOTEPROC_INTERNAL_H
-#define REMOTEPROC_INTERNAL_H
-
 #include <linux/irqreturn.h>
 #include <linux/firmware.h>
 #include "pru_speak.h"
@@ -250,8 +245,8 @@ static struct attribute_group pru_speak_attr_group = {
 
 static int pru_speak_remove(struct platform_device *pdev)
 {
-	struct device *dev = &pdev->dev; //export device from pru_proc? -- need for sysfs
 	int i;
+	struct device *pruproc_dev = &(ps_dev->pdev_rproc->dev);
 	//free the pru speak data struct
 	kfree(ps_dev);
 
@@ -261,7 +256,6 @@ static int pru_speak_remove(struct platform_device *pdev)
 	}
 
 	//remove all the sysfs entries
-	struct device *pruproc_dev = &(ps_dev->pdev->dev);
 	sysfs_remove_group(&pruproc_dev->kobj, &pru_speak_attr_group);
 
 	return 0;
@@ -271,13 +265,14 @@ static int pru_speak_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev; 
 	struct device_node *node = dev->of_node;
+	struct device *pruproc_dev = &(ps_dev->pdev_rproc->dev);
 	int shm_count, err, x;
 	int tmparr[MAX_SHARED];
 
 	ps_dev = kzalloc(sizeof(*ps_dev), GFP_KERNEL);
 
 	ps_dev->pdev_rproc = pruspeak_get_pdev_rproc();
-	if(ps_dev->pdev_rproc == -1){
+	if(ps_dev->pdev_rproc == (struct platform_device *)NULL){
 		dev_error(dev, "can't get pdev_rproc\n");
 		goto err_fail;
 	}
@@ -309,7 +304,7 @@ static int pru_speak_probe(struct platform_device *pdev)
 	/* assign idx, shared memory size for each segment for this pru */
 	for(x=0; x < shm_count; x++){
 		ps_dev->shm[x].size_in_pages = tmparr[x];
-		ps_dev->shm[x].idx = pru_idx;
+		ps_dev->shm[x].idx = 0; //shm always pru0
 
 		/* mark valid each shm segment, allocate space for it*/
 		printk("Initializing shm #%d", x);
@@ -328,10 +323,9 @@ static int pru_speak_probe(struct platform_device *pdev)
 	printk("SHM initalization sequence is now complete\n");
 
 	//create sysfs
-	struct device *pruproc_dev = &(ps_dev->pdev->dev);
 	err = sysfs_create_group(&pruproc_dev->kobj, &pru_speak_attr_group);
 	if (err) {
-		dev_err("creation of sysfs failed!\n");
+		dev_err(dev, "creation of sysfs failed!\n");
 		goto err_fail;
 	}
 
@@ -355,8 +349,8 @@ static struct platform_driver pru_speak_driver = {
 		.owner	= THIS_MODULE,
 		.of_match_table = pru_speak_dt_ids,
 	},
-	.probe	= pruspeak_probe,
-	.remove	= pruspeak_remove,
+	.probe	= pru_speak_probe,
+	.remove	= pru_speak_remove,
 };
 
 //module_platform_driver(pruproc_driver);
