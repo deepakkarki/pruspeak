@@ -261,7 +261,8 @@ static int pru_speak_remove(struct platform_device *pdev)
 	}
 
 	//remove all the sysfs entries
-	sysfs_remove_group(&dev->kobj, &pru_speak_attr_group);
+	struct device *pruproc_dev = &(ps_dev->pdev->dev);
+	sysfs_remove_group(&pruproc_dev->kobj, &pru_speak_attr_group);
 
 	return 0;
 }
@@ -328,7 +329,7 @@ static int pru_speak_probe(struct platform_device *pdev)
 
 	//create sysfs
 	struct device *pruproc_dev = &(ps_dev->pdev->dev);
-	err = sysfs_create_group(&dev->kobj, &pru_speak_attr_group);
+	err = sysfs_create_group(&pruproc_dev->kobj, &pru_speak_attr_group);
 	if (err) {
 		dev_err("creation of sysfs failed!\n");
 		goto err_fail;
