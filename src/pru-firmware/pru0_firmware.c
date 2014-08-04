@@ -776,8 +776,6 @@ int main()
 		
 		if (is_executing || single_command){ //or if single_cmd
 			execute_instruction();
-			send_ret_value(is_executing);
-			send_ret_value(single_command);
 		}
 		
 	}
