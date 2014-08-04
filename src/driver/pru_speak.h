@@ -39,5 +39,6 @@ struct pru_speak{
 	int shm_count;
 	struct platform_device *pdev_rproc; //pointer to pdev of pp_ps in pru_rproc.c
 };
-
+extern int pruspeak_downcall_idx(int idx, u32 nr, u32 arg0, u32 arg1, u32 arg2, u32 arg3, u32 arg4);
+extern struct platform_device *pruspeak_get_pdev_rproc(void);
 #endif

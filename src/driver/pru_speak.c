@@ -265,41 +265,44 @@ static int pru_speak_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev; 
 	struct device_node *node = dev->of_node;
-	struct device *pruproc_dev = &(ps_dev->pdev_rproc->dev);
 	int shm_count, err, x;
 	int tmparr[MAX_SHARED];
 
+	printk(KERN_INFO "entering pru_speak_probe\n");
+
 	ps_dev = kzalloc(sizeof(*ps_dev), GFP_KERNEL);
+
+	printk(KERN_INFO "ps_dev allocated : %p\n", ps_dev);
 
 	ps_dev->pdev_rproc = pruspeak_get_pdev_rproc();
 	if(ps_dev->pdev_rproc == (struct platform_device *)NULL){
-		dev_error(dev, "can't get pdev_rproc\n");
+		//dev_error(dev, "can't get pdev_rproc\n");
 		goto err_fail;
 	}
-	
+	printk(KERN_INFO "call made to pruspeak_get_pdev_rproc\n");
 	platform_set_drvdata(pdev, ps_dev);
 
 	/* get the number of shared memory segment */
 	err = of_property_read_u32(node, "shm-count", &shm_count);
 
 	if (err != 0) {
-		dev_err(dev, "can't find property %s\n", "shm-count");
+		//dev_err(dev, "can't find property %s\n", "shm-count");
 		goto err_fail;
 	}		
 
 	/* make sure the count is within limits expected */
 	if ((shm_count < MIN_SHARED) || (shm_count > MAX_SHARED)){
-		dev_err(dev, "expected shm segments, min : %d, max : %d\n", MIN_SHARED, MAX_SHARED);
+		//dev_err(dev, "expected shm segments, min : %d, max : %d\n", MIN_SHARED, MAX_SHARED);
 		goto err_fail;
 	}
 
 	err = of_property_read_u32_array(node, "shm-size", tmparr, shm_count);
 	if (err != 0) {
-		dev_err(dev, "no shm-size property\n");
+		//dev_err(dev, "no shm-size property\n");
 		goto err_fail;
 	}
 
-	
+	printk(KERN_INFO "entering shm allocation\n");
 
 	/* assign idx, shared memory size for each segment for this pru */
 	for(x=0; x < shm_count; x++){
@@ -320,12 +323,13 @@ static int pru_speak_probe(struct platform_device *pdev)
 
 	ps_dev->shm_count = shm_count;
 
-	printk("SHM initalization sequence is now complete\n");
+	printk(KERN_INFO"SHM initalization sequence is now complete\n");
 
 	//create sysfs
+	struct device *pruproc_dev = &(ps_dev->pdev_rproc->dev);
 	err = sysfs_create_group(&pruproc_dev->kobj, &pru_speak_attr_group);
 	if (err) {
-		dev_err(dev, "creation of sysfs failed!\n");
+		//dev_err(dev, "creation of sysfs failed!\n");
 		goto err_fail;
 	}
 

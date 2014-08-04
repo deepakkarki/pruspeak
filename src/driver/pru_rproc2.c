@@ -3006,6 +3006,8 @@ static int pruproc_probe(struct platform_device *pdev)
 	(void)pru_d_read_u32;
 	(void)pru_i_write_u32;
 	(void)pru_d_write_u32;
+	
+	dev_info(dev, "pru_proc probe completed\n");
 
 	return 0;
 err_fail:
