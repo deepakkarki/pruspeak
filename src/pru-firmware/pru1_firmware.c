@@ -27,6 +27,10 @@ int main()
 {
         /* init the structs in the array and shm area */
 	int i,j;
+	__R30 = 0xFF;
+	while(1) 
+	{;
+	}
 	for(i = 0; i < CHANNELS; i++ ){
 		pwm_sys[i].pin = i;
 		pwm_sys[i].hi_time = 0;
