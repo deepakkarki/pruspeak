@@ -2,7 +2,7 @@
 /plugin/;
 
 / {
-	compatible = "ti,beaglebone", "ti,beaglebone-black", "ti,pru_speak";
+	compatible = "ti,beaglebone", "ti,beaglebone-black";
 
 	/* identification */
 	part-number = "BB-PRUSPEAK";
@@ -264,12 +264,6 @@
 					/* sysevents signaling ring activity (host, pru)*/
 					vring-sysev = <24 25>;
 
-					/* shared memory count */
-					//shm-count = <2>;
-
-					/* corresponding size of each shm segment - in units of pages*/
-					//shm-size = <1 1>;
-			
 					resource_table {
 						resource-table;
 						version = <1>;
@@ -302,15 +296,8 @@
 					pctrl = <0x24000>;
 					pdbg  = <0x24400>;
 
-					//firmware-elf; 
+					firmware-elf; 
 					firmware = "pru1_firmware";
-
-                                        /* shared memory count */
-                                        //shm-count = <2>;
-
-                                        /* corresponding size of each shm segment - in units of pages*/
-                                        //shm-size = <1 1>;
-
 				};
 
 			};
