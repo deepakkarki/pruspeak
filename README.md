@@ -9,9 +9,9 @@ This project enables dynamic control of the Beaglebone black's PRU (Programmable
 **BotSpeak** is a robotics programming language designed to bridge the gap between small embedded systems such as the Raspberry Pi, BeagleBone, and Arduino.
 [See  http://botspeak.org/ and https://sites.google.com/site/botspeak/ for more information]
 
-**PRU** is a dual core micro-controller system present on the AM335x SoC (TI's ARM A8 based chip) which powers the [Beagle Bone black][http://beagleboard.org/black].
+**PRU** is a dual core micro-controller system present on the AM335x SoC (TI's ARM A8 based chip) which powers the [Beagle Bone black][1].
 
-The [PRU][http://elinux.org/BeagleBone_PRU_Notes] is meant to be used for high speed jitter free IO control. Being independent from the linux scheduler and having direct access to the IO pins of the BeagleBone Black, PRU is ideal for offloading IO intensive tasks.
+The [PRU][2] is meant to be used for high speed jitter free IO control. Being independent from the linux scheduler and having direct access to the IO pins of the BeagleBone Black, PRU is ideal for offloading IO intensive tasks.
 
 ##How to use
 
@@ -29,7 +29,7 @@ Environment setup
 =================
 
 To load the kernel module and device tree overlay
-#bash setup.sh
+#bash env_setup.sh
 
 Running
 =======
@@ -88,3 +88,5 @@ The system architecture of the project is well illustrated in this flow chart.
 
 	[link to some other page (wiki maybe)]
 
+[1] : [http://beagleboard.org/black]
+[2] : [http://elinux.org/BeagleBone_PRU_Notes]

@@ -15,7 +15,93 @@
 	part-number = "BB-PRUSPEAK";
 	version = "00A0";
 
+	/* state the resources this cape uses */
+	exclusive-use =
+		/* the pin header uses */
+		"P9.27",	/* pru0: pr1_pru0_pru_r30_5 */
+
+		"P8.11",	/* pru0: pr1_pru0_pru_r30_15 */
+		"P8.12",	/* pru0: pr1_pru0_pru_r30_14 */
+		"P9.25",	/* pru0: pr1_pru0_pru_r30_7 */
+		"P9.41",	/* pru0: pr1_pru0_pru_r30_6 */
+		"P9.42",	/* pru0: pr1_pru0_pru_r30_4 */
+		"P9.28",	/* pru0: pr1_pru0_pru_r30_3 */
+		"P9.30",	/* pru0: pr1_pru0_pru_r30_2 */
+		"P9.29",	/* pru0: pr1_pru0_pru_r30_1 */
+		"P9.31",	/* pru0: pr1_pru0_pru_r30_0 */
+				/* pru0: pr1_pru0_pru_r30_13 is on MMC0_CMD */
+				/* pru0: pr1_pru0_pru_r30_12 is on MMC0_CLK */
+				/* pru0: pr1_pru0_pru_r30_11 is on MMC0_DAT0 */
+				/* pru0: pr1_pru0_pru_r30_10 is on MMC0_DAT1 */
+				/* pru0: pr1_pru0_pru_r30_9 is on MMC0_DAT2 */
+				/* pru0: pr1_pru0_pru_r30_8 is on MMC0_DAT3 */
+		"P8.15",	/* pru0: pr1_pru0_pru_r31_15 */
+		"P8.14",	/* pru0: pr1_pru0_pru_r31_14 */
+
+		//"P8.20",	/* pru1: pr1_pru1_pru_r30_13 */ --conflict with eMMC
+
+		//"P8.21",	/* pru1: pr1_pru1_pru_r30_12 */
+		"P8.27",	/* pru1: pr1_pru1_pru_r30_8 */
+		"P8.28",	/* pru1: pr1_pru1_pru_r30_10 */
+		"P8.29",	/* pru1: pr1_pru1_pru_r30_9 */
+		"P8.30",	/* pru1: pr1_pru1_pru_r30_11 */
+		"P8.39",	/* pru1: pr1_pru1_pru_r30_6 */
+		"P8.40",	/* pru1: pr1_pru1_pru_r30_7 */
+		"P8.41",	/* pru1: pr1_pru1_pru_r30_4 */
+		"P8.42",	/* pru1: pr1_pru1_pru_r30_5 */
+		"P8.43",	/* pru1: pr1_pru1_pru_r30_2 */
+		"P8.44",	/* pru1: pr1_pru1_pru_r30_3 */
+		"P8.45",	/* pru1: pr1_pru1_pru_r30_0 */
+		"P8.46",	/* pru1: pr1_pru1_pru_r30_1 */
+				/* pru1: pr1_pru1_pru_r30_14 is on UART0_RXD */
+				/* pru1: pr1_pru1_pru_r30_15 is on UART0_TXD */
+		/* the hardware IP uses */
+		"pru0",
+		"pru1";
+
 	fragment@0 {
+		target = <&am33xx_pinmux>;
+		__overlay__ {
+
+			pru_gpio_pins: pinmux_pru_gpio_pins {
+				pinctrl-single,pins = <
+					0x1a4 0x0f 	/* P9 27 GPIO3_19: mcasp0_fsr.gpio3[19] | MODE7 | OUTPUT */
+				>;
+			};
+
+			pru_pru_pins: pinmux_pru_pru_pins {
+				pinctrl-single,pins = <
+					0x1a4 0x25	/* mcasp0_fsr.pr1_pru0_pru_r30_5, MODE5 | OUTPUT | PRU */
+					0x034 0x26	/* gpmc_ad13.pr1_pru0_pru_r30_15, MODE6 | OUTPUT | PRU */
+					0x030 0x26	/* gpmc_ad12.pr1_pru0_pru_r30_14, MODE6 | OUTPUT | PRU */
+					0x1ac 0x25	/* mcasp0_ahclkx.pr1_pru0_pru_r30_7, MODE5 | OUTPUT | PRU */
+					0x1a8 0x25	/* mcasp0_axr1.pr1_pru0_pru_r30_6, MODE5 | OUTPUT | PRU */
+					0x1a0 0x25	/* mcasp0_aclkr.pr1_pru0_pru_r30_4, MODE5 | OUTPUT | PRU */
+					0x19c 0x25	/* mcasp0_ahclkr.pr1_pru0_pru_r30_3, MODE5 | OUTPUT | PRU */
+					0x198 0x25	/* mcasp0_axr0.pr1_pru0_pru_r30_2, MODE5 | OUTPUT | PRU */
+					0x194 0x25	/* mcasp0_fsx.pr1_pru0_pru_r30_1, MODE5 | OUTPUT | PRU */
+					0x190 0x25	/* mcasp0_aclkx.pr1_pru0_pru_r30_0, MODE5 | OUTPUT | PRU */
+					0x03c 0x26	/* GPMC_AD15.pr1_pru0_pru_r31_15, MODE6 | INPUT | PRU*/
+					0x038 0x26	/* GPMC_AD14.pr1_pru0_pru_r31_14, MODE6 | INPUT | PRU*/
+
+					//0x084 0x25	/* gpmc_csn2.pr1_pru1_pru_r30_13, MODE5 | OUTPUT | PRU */ --conflict with eMMC
+					//0x080 0x25	/* gpmc_csn1.pr1_pru1_pru_r30_12, MODE5 | OUTPUT | PRU */
+					0x0e0 0x25	/* lcd_vsync.pr1_pru1_pru_r30_8, MODE5 | OUTPUT | PRU */
+					0x0e8 0x25	/* lcd_pclk.pr1_pru1_pru_r30_10, MODE5 | OUTPUT | PRU */
+					0x0e4 0x25	/* lcd_hsync.pr1_pru1_pru_r30_9, MODE5 | OUTPUT | PRU */
+					0x0ec 0x25	/* lcd_ac_bias_en.pr1_pru1_pru_r30_11, MODE5 | OUTPUT | PRU */
+					0x0bc 0x25	/* lcd_data7.pr1_pru1_pru_r30_7, MODE5 | OUTPUT | PRU */
+					0x0b0 0x25	/* lcd_data4.pr1_pru1_pru_r30_4, MODE5 | OUTPUT | PRU */
+					0x0b4 0x25	/* lcd_data5.pr1_pru1_pru_r30_5, MODE5 | OUTPUT | PRU */
+					0x0ac 0x25	/* lcd_data3.pr1_pru1_pru_r30_3, MODE5 | OUTPUT | PRU */
+					0x0a0 0x25	/* lcd_data0.pr1_pru1_pru_r30_0, MODE5 | OUTPUT | PRU */
+					0x0a4 0x25	/* lcd_data1.pr1_pru1_pru_r30_1, MODE5 | OUTPUT | PRU */
+				>;
+			};
+		};
+	};
+
+	fragment@2 {
 		target = <&ocp>;
 
 		__overlay__ {
@@ -26,6 +112,9 @@
 
 			prurproc {
 				compatible = "ti,pru_speak";
+
+				pinctrl-names = "default";
+				pinctrl-0 = <&pru_pru_pins>;
 
 				reg = <0x4a300000 0x080000>;
 
@@ -164,7 +253,7 @@
 					pdbg  = <0x22400>;
 
 					firmware-elf;
-					firmware = "pru_firmware";
+					firmware = "pru0_firmware";
 
 					/* sysevents signaling ring activity (host, pru)*/
 					vring-sysev = <24 25>;
@@ -218,11 +307,17 @@
 					pctrl = <0x24000>;
 					pdbg  = <0x24400>;
 
-					//firmware-elf; --not yet
-					//firmware = "testpru1";
+					//firmware-elf; 
+					firmware = "pru1_firmware";
 
-					/* NOTE: no resource table, no vrings for this one */
+                                        /* shared memory count */
+                                        shm-count = <2>;
+
+                                        /* corresponding size of each shm segment - in units of pages*/
+                                        shm-size = <1 1>;
+
 				};
+
 			};
 		};
 	};
