@@ -20,16 +20,16 @@ Installing
 ==========
 
 Install ply (python lex and yacc), make sure pip is installed
-```pip install ply```
+#pip install ply
 
 run (to copy firmwares to reqd folder)
-```bash install.sh```
+#bash install.sh
 
 Environment setup
 =================
 
 To load the kernel module and device tree overlay
-```bash setup.sh```
+#bash setup.sh
 
 Running
 =======
@@ -48,7 +48,7 @@ Three possible interfaces :
 	A TCP interface at localhost:6060 for the Pru Speak interpreter. Write to the socket for command/script, read for return value.
 
 To try a simple blink example (blink P9_31):
-```bash blink.sh```
+#bash blink.sh
 
 [**NOTE** use only any one interface at a given point of time. PRU Speak is refreshed everytime a interface is initialized. You may lose existing session]
 
@@ -69,17 +69,22 @@ The system architecture of the project is well illustrated in this flow chart.
 ##future work
 -- TODO:
 	Language bindings
+
 	cleaner interfaces (for TCP and FIFO --to both r/w)
+
 	fill in wiki and encoding scheme
+
 	explain working in detail
 
 ##more detail on how to use
 -- TODO
 	language feature and limitations and 'gotcha' points ;)
+
 	[link to some other page (wiki maybe)]
 
 ##examples
 -- TODO
 	Lots of examples including 
+
 	[link to some other page (wiki maybe)]
 
