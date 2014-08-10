@@ -27,4 +27,5 @@ while True:
 
 
 f_read.close()
+os.remove(PATH)
 
