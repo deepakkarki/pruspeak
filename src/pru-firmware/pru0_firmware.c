@@ -288,7 +288,7 @@ void wait_goto_get_handler(int opcode, u32 inst)
 		send_ret_value(val);	
 }
 
-#if 0
+#if 1
 void if_handler(int opcode, u32 inst)
 {
 	/* IF (a <cond> b) GOTO c 
