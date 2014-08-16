@@ -21,11 +21,11 @@ EX3 = '''\
 SCRIPT
 SET var1, 0
 SET PWM[0], var1
-WAIT 10
+WAIT 100
 ADD var1, 1
 IF (var1 < 100) GOTO 1
 SET PWM[0], var1
-WAIT 10
+WAIT 100
 SUB var1, 1
 IF (var1 > 0) GOTO 5
 IF (1 > 0) GOTO 0
@@ -33,6 +33,9 @@ ENDSCRIPT
 RUN
 '''
 
-ret = pru_speak.execute_instruction(EX1)
-print ret 
+ret = pru_speak.execute_instruction(EX3)
+print ret
+
+while True:
+	pass
 

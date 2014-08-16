@@ -14,7 +14,7 @@ TEXT Section .text:timer_init (Little Endian), 0x3C bytes at 0x0
 00000008     91402080      LBCO &R0.b0, C0,  64, 4
 0000000c     1f02e0e0      SET R0, R0, 2
 00000010     81402080      SBCO &R0.b0, C0,  64, 4
-00000014     2407d0e0      LDI R0, 2000
+00000014     2403e8e0      LDI R0, 1000
 00000018     910c2081      LBCO &R1.b0, C0,  12, 4
 0000001c     00e0e1e0      ADD R0, R1, R0
 00000020     814c2080      SBCO &R0.b0, C0,  76, 4
@@ -248,7 +248,7 @@ TEXT Section .text:main (Little Endian), 0x3D0 bytes at 0x0
 0000031c     0101e1e1      ADD R1, R1, 1
 00000320     e1002081      SBBO &R1.b0, R0, 0, 4
 00000324     f1002080      LBBO &R0.b0, R0, 0, 4
-00000328     690ae021      QBNE $C$L21, R0, 10
+00000328     6964e021      QBNE $C$L21, R0, 100
 0000032c     240000e0      LDI R0, 0
 00000330     240000e1      LDI R1, 0
 00000334     e1002180      SBBO &R0.b0, R1, 0, 4
@@ -285,7 +285,7 @@ TEXT Section .text:main (Little Endian), 0x3D0 bytes at 0x0
 000003ac                   $C$L21:
 000003ac     91442080      LBCO &R0.b0, C0,  68, 4
 000003b0     cf01e0ff      QBBC $C$L21, R0, 1
-000003b4     2407d0e0      LDI R0, 2000
+000003b4     2403e8e0      LDI R0, 1000
 000003b8     910c2081      LBCO &R1.b0, C0,  12, 4
 000003bc     00e0e1e0      ADD R0, R1, R0
 000003c0     814c2080      SBCO &R0.b0, C0,  76, 4

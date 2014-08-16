@@ -307,7 +307,7 @@
 					pctrl = <0x24000>;
 					pdbg  = <0x24400>;
 
-					//firmware-elf; 
+					firmware-elf; 
 					firmware = "pru1_firmware";
 
                                         /* shared memory count */

@@ -718,7 +718,7 @@ void execute_instruction()
 		case GET:
 			wait_goto_get_handler(opcode, inst);
 		break;
-/*
+
 		case IF_EQ:
 		case IF_NEQ:
 		case IF_GTE:
@@ -734,7 +734,7 @@ void execute_instruction()
 		case SUB_64:
 			math_handler(opcode, inst);
 		break;
-*/		
+		
 		case HALT:
 			is_waiting = 0;
 			is_executing = 0;
@@ -776,8 +776,8 @@ int main()
 		
 		if (is_executing || single_command){ //or if single_cmd
 			execute_instruction();
-			send_ret_value(is_executing);
-			send_ret_value(single_command);
+			//send_ret_value(is_executing);
+			//send_ret_value(single_command);
 		}
 		
 	}
