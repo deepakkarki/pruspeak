@@ -252,7 +252,7 @@ def byte_code_set(val1, val2):
 			
 			if val2.arr_const:
 			#val1 is an const indexed array
-				byte0 = pru_arrs[val2.val[0]][0] + val2.val[1]
+				byte0 = get_var(val2) #pru_arrs[val2.val[0]][0] + val2.val[1]
 			else:
 			#val1 is an VAR
 				byte0 = pru_vars[val2.val]
@@ -809,11 +809,11 @@ if __name__ == '__main__':
 	'GOTO arr1[4]'
 ]
 	try :
-		print parser.parse("SET arr[], 4")
-		print pru_var_count
-		print parser.parse("SET var, 2")
-                print pru_var_count
-		print parser.parse("SET arr[var], var")
+		print parser.parse("SET var1, 4")
+		#print pru_var_count
+		print parser.parse("GET DIO[0]")
+                #print pru_var_count
+		print parser.parse("SET var1, DIO[0]")
 	except Exception as e:
 		print "some error"
 		print e.args
