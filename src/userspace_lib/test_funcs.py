@@ -1,6 +1,5 @@
 SCRIPT = '''\
 SET delay, 500
-SET DIO[4], 0
 SET loop, flash
 SCRIPT
 GOTO loop

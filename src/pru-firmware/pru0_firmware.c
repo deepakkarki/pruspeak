@@ -525,6 +525,22 @@ void math_handler(int opcode, u32 inst)
 		case SUB_64:
 			res = val1 - val2;
 		break;
+		
+		case AND_32:
+		case AND_64:
+			res = val1 & val2;
+		break;
+
+		case OR_32:
+		case OR_64:
+			res = val1 | val2;
+		break;
+
+		case NOT_32:
+		case NOT_64:
+			res = ~val2;
+		break;
+
 
 		default:
 			res = val1;
