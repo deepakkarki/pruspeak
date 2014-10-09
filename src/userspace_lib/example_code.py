@@ -21,11 +21,11 @@ EX3 = '''\
 SCRIPT
 SET var1, 0
 SET PWM[0], var1
-WAIT 100
+WAIT 30
 ADD var1, 1
 IF (var1 < 100) GOTO 1
 SET PWM[0], var1
-WAIT 100
+WAIT 30
 SUB var1, 1
 IF (var1 > 0) GOTO 5
 IF (1 > 0) GOTO 0
