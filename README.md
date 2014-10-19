@@ -55,6 +55,7 @@ To try a simple blink example (blink P9_31):
 ```
 
 ##How it works
+
 The project consists of three main components
   * The user space libraries 
   * The remote proc device driver
@@ -62,6 +63,14 @@ The project consists of three main components
 
 The system architecture of the project is well illustrated in this flow chart.
 ![The PRU Speak Architecture](https://raw.githubusercontent.com/wiki/deepakkarki/pruspeak/PRU-Speak-Architecture.png)
+
+##Build from source
+
+1. Get the kernel headers if you don't already have them. 
+run this script : (https://github.com/deepakkarki/pruspeak/blob/master/src/driver/bb-get-rcn-kernel-source.sh) in bash
+2. Run the build.sh in the project root directory. ```bash build.sh```
+3. Run install.sh ```bash install.sh```
+
 
 ##Project structure
 -- TODO : explain various dirs and files. 
