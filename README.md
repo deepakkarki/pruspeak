@@ -67,7 +67,7 @@ The system architecture of the project is well illustrated in this flow chart.
 ##Build from source
 
 1. Get the kernel headers if you don't already have them. 
-run this script : (https://github.com/deepakkarki/pruspeak/blob/master/src/driver/bb-get-rcn-kernel-source.sh) in bash
+To download the headers run this [script] [3] in bash.
 2. Run the build.sh in the project root directory. ```bash build.sh```
 3. Run install.sh ```bash install.sh```
 
@@ -102,3 +102,4 @@ run this script : (https://github.com/deepakkarki/pruspeak/blob/master/src/drive
 
 [1]: http://beagleboard.org/black
 [2]: http://elinux.org/BeagleBone_PRU_Notes
+[3]: https://github.com/deepakkarki/pruspeak/blob/master/src/driver/bb-get-rcn-kernel-source.sh
