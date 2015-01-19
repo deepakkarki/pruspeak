@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from pru_speak import pru_speak
 import socket 
 #Server on local host @ port 6060
