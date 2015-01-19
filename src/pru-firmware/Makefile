@@ -21,4 +21,5 @@ pru1_firmware.obj: pru1_firmware.c pru1_firmware.h pru_firmware.h
 
 
 install: all
-	install -T -m 444 pru0_firmware /lib/firmware/pru_firmware
+	install -m 444 pru0_firmware /lib/firmware
+	install -m 444 pru1_firmware /lib/firmware
