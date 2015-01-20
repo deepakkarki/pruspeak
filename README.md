@@ -28,8 +28,8 @@ run (to copy firmwares to reqd folder)
 Environment setup
 =================
 
-To load the kernel module and device tree overlay
-#bash env_setup.sh
+To load the kernel module, device tree overlay, firmware and TCP server
+#bash run.sh
 
 Running
 =======
@@ -66,11 +66,7 @@ The system architecture of the project is well illustrated in this flow chart.
 
 ##Build from source
 
-1. Get the kernel headers if you don't already have them. 
-To download the headers run this [script] [3] in bash.
-2. Run the build.sh in the project root directory. ```bash build.sh```
-3. Run install.sh ```bash install.sh```
-
+Run ```bash install.sh```
 
 ##Project structure
 -- TODO : explain various dirs and files. 
@@ -102,4 +98,3 @@ To download the headers run this [script] [3] in bash.
 
 [1]: http://beagleboard.org/black
 [2]: http://elinux.org/BeagleBone_PRU_Notes
-[3]: https://github.com/deepakkarki/pruspeak/blob/master/src/driver/bb-get-rcn-kernel-source.sh

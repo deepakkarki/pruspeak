@@ -1,7 +1,5 @@
+#!/usr/bin/env python
 #This is a shell to use pruspeak
-#This will be later broken down into two versions 
-#	- FIFO useable from the bash shell
-#	- socket based server, client being LabView(?)
 
 from pru_speak import pru_speak
 import sys 

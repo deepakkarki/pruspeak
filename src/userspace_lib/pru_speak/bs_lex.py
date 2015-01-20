@@ -26,7 +26,8 @@ reserved = [
 	'ABORT',
 	'HALT',
 	'SYSTEM',
-	'DEBUG'
+	'DEBUG',
+	'LBL'
 ]
 
 tokens = [
@@ -48,8 +49,16 @@ t_LT		=  r'<'
 t_EQ		=  r'=='
 t_NEQ		=  r'!='
 t_ignore		=  ' \t'
+t_ignore_comment    =  r';.*$'
 
 literals = '[](),'
+
+def t_HEX_INT(t):
+    '0x[0-9a-fA-F]+'
+    t.type = 'INT'
+    value = t.value[2:].replace("_", "")
+    t.value = int(value, 16)
+    return t
 
 def t_INT(t):
 	'\d+'

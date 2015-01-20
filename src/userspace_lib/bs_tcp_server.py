@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from pru_speak import pru_speak
 import socket 
 #Server on local host @ port 6060
@@ -36,7 +37,7 @@ while True:
 				conn.send('\n')
 			else:
 				#the sends the list of ret values as a string sperated by " "
-	        	        conn.send(" ".join(map(str, ret)))
+	        	        conn.send(" ".join(map(str, ret)) + "\n")
 
 	        except Exception as e:
                 	print e

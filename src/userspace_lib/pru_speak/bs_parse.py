@@ -84,7 +84,14 @@ def get_var(val):
 			return -1 #throw exception later
 	else:
 		#val1 is an VAR
-		return pru_vars[val.val]
+		#return pru_vars[val.val]
+		global pru_var_count	
+		val_index = pru_vars.get(val.val, None)
+		if val_index == None:
+			pru_vars[val.val] = pru_var_count
+			val_index = pru_var_count
+			pru_var_count += 1	
+		return val_index
 
 
 def byte_code_set_r(val1, val2):
@@ -249,14 +256,8 @@ def byte_code_set(val1, val2):
 		else: 
 		#type2 : SET x, y; y is a variable
 			OPCODE += 1
-			
-			if val2.arr_const:
-			#val1 is an const indexed array
-				byte0 = get_var(val2) #pru_arrs[val2.val[0]][0] + val2.val[1]
-			else:
-			#val1 is an VAR
-				byte0 = pru_vars[val2.val]
-				
+			byte0 = get_var(val2)
+
 		#return the byte encoded information
 		return pack_byte(OPCODE, byte2, byte1, byte0)
 	
@@ -601,6 +602,7 @@ inst : SET val , val
 	| OR   val, val
 	| AND val, val 
 	| NOT val, val
+	| LBL VAR
 	| SCRIPT
 	| ENDSCRIPT
 	| RUN
@@ -653,11 +655,24 @@ def p_inst_SET(p):
 		else :
 			p[0] = byte_code_set(p[2], p[4])
 
+def p_inst_LBL(p):
+	'''inst : LBL VAR'''
+	global pru_var_count
+	byte2 = pru_vars.get(p[2], None)
+	if byte2 == None:
+		pru_vars[p[2]] = pru_var_count
+		byte2 = pru_var_count
+		pru_var_count += 1
+	p[0] = pack_byte(0x10, byte2, 0, 0)
+
+def add_label(byte_code, index):
+	return (byte_code & 0xFFFF0000) | (index & 0xFFFF)
+
 def p_inst_WAIT(p):
 	'''inst : WAIT val'''
 	#print "WAIT command - val :", p[2]
 	p[0] = byte_code_single_op(p[1], p[2])
-	
+
 def p_inst_GOTO(p):
 	'''inst : GOTO val'''
 	#print "GOTO command - val :", p[2]
@@ -789,8 +804,9 @@ def p_inst_SYSTEM(p):
 	
 # Error rule for syntax errors
 def p_error(p):
-	print p
-	print "Syntax error in input!"
+	if p != None:
+		print p
+		print "Syntax error in input!"
 
 
 # Build the parser

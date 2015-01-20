@@ -2,7 +2,7 @@ from mmap import mmap
 import time, struct
 
 PAGE_SIZE	=	4096
-HOME		=	"/sys/devices/ocp.3/4a300000.prurproc/"
+HOME		=	"/sys/class/misc/pru_speak/"
 INIT_FILE	=	HOME + "pru_speak_shm_init"
 EXEC_FILE	=	HOME + "pru_speak_execute"
 SINGLE_INST	=	HOME + "pru_speak_single_cmd"

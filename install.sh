@@ -1,5 +1,26 @@
-cp ./bin/pru0_firmware /lib/firmware/
-cp ./bin/pru1_firmware /lib/firmware/
-cp ./bin/BB-PRUSPEAK-00A0.dtbo /lib/firmware/
-cp ./bin/BB-BONE-PRU-07-00A0.dtbo /lib/firmware
+#!/bin/sh
+#make driver
+cd src/driver
+make
+make install
+cd ../..
+
+#make pru_firmware
+cd src/pru-firmware
+make
+make install
+cd ../..
+
+#make dts
+cd src/dts
+make
+make install
+cd ../..
+
+#make userspace
+cd src/userspace_lib
+make
+make install
+cd ../..
+
 
