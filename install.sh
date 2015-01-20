@@ -1,5 +1,6 @@
+#!/bin/sh
 #make driver
-cd src/drivers
+cd src/driver
 make
 make install
 cd ../..
