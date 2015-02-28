@@ -72,15 +72,14 @@ Run ```bash install.sh```
 -- TODO : explain various dirs and files. 
 
 ##future work
--- TODO:
 
-	Language bindings
-
-	cleaner interfaces (for TCP and FIFO --to both r/w)
-
-	fill in wiki and encoding scheme
-
-	explain working in detail
+- [ ] Language bindings to Python and Node.js
+- [ ] Cleaner interfaces (for TCP and FIFO --to both r/w)
+- [ ] Fill in wiki and encoding scheme
+- [ ] Explain working in detail
+- [ ] Add streams between PRU and ARM
+- [ ] Add ability to dynamically set frequency for PWM
+- [ ] More commands for qep, uart, hard-pwm etc
 
 ##more detail on how to use
 -- TODO
