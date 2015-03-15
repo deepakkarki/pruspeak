@@ -6,10 +6,10 @@ make install
 cd ../..
 
 #make pru_firmware
-cd src/pru-firmware
-make
-make install
-cd ../..
+#cd src/pru-firmware
+#make
+#make install
+#cd ../..
 
 #make dts
 cd src/dts

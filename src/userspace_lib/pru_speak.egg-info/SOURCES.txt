@@ -1,0 +1,12 @@
+setup.py
+pru_speak/__init__.py
+pru_speak/bs_lex.py
+pru_speak/bs_parse.py
+pru_speak/kernel_lib.py
+pru_speak/node.py
+pru_speak/pruspeak.py
+pru_speak.egg-info/PKG-INFO
+pru_speak.egg-info/SOURCES.txt
+pru_speak.egg-info/dependency_links.txt
+pru_speak.egg-info/requires.txt
+pru_speak.egg-info/top_level.txt

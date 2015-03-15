@@ -33,6 +33,7 @@ while True:
 
 	try:
 		ret = pru_speak.execute_instruction(code)
+		print code
 		print ret
 	except Exception as e:
 		print e

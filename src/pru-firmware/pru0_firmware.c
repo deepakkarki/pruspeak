@@ -103,13 +103,27 @@ void dio_handler(int opcode, u32 inst)
 		val2 = var_loc[addr];
 	}
 	/* set hi*/
-	if(val2 && (val1 < MAX_DIO)){ 
-        	__R30 = __R30 | ( 1 << val1);
-        }
+	if(val2 && (val1 < MAX_DIO)){
+	if(val1<12)
+	{	
+	__R30 = __R30 | ( 1 << val1);
+	}
+	else
+	{
+	mmio32(GPIO_OE) = 0xFFFFFFFF^(1<<(val1-14));
+	mmio32(GPIO_SETDATAOUT) = (1<<(val1-14));
+	}
+	}
 
 	/* set low*/
         else{ 
+		if(val1<12){
         	__R30 = __R30 & ~( 1 << val1);
+		}
+	else
+		{
+			mmio32(GPIO_CLEARDATAOUT) = (1<<(val1-14));
+		}
         }
 	
 	if(single_command)

@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: pru-speak
+Version: 0.0
+Summary: BotSpeak interpreter for BeagleBone Black PRU-ICSS
+Home-page: https://github.com/deepakkarki/pruspeak
+Author: Deepak Karki
+Author-email: deepak6k@gmail.com
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
