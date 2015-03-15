@@ -73,12 +73,24 @@ int get_var_val(int addr)
 
 	return 0;
 }
+/*maps value to gpio modules*/
+int map_gpio(int val)
+{
+if(val>7 && val<12)
+	{ 
+	return (val-6); // This is done because SET DIO[8], maps to GPIO0_2, thus 8 - 6 = 2
+	}
+if(val>11 && val < 19) // GPIO0_6 missing ? can't find on headers.
+{
+return (val-5);  // SET DIO[12] onwards maps to GPIO0_7, 12 - 5 = 7.
+}
 
+}
 /*instruction handlers*/
 
 void dio_handler(int opcode, u32 inst)
-{
-	int val1, val2;
+{	PRUCFG_SYSCFG = PRUCFG_SYSCFG & (~SYSCFG_STANDBY_INIT);
+	int val1, val2,val3;
 	if(opcode == SET_DIO_a){
 	/* SET DIO[c/v], c/v */
 		
@@ -104,28 +116,30 @@ void dio_handler(int opcode, u32 inst)
 	}
 	/* set hi*/
 	if(val2 && (val1 < MAX_DIO)){
-	if(val1<12)
+	if(val1<8)
 	{	
 	__R30 = __R30 | ( 1 << val1);
 	}
 	else
 	{
-	mmio32(GPIO_OE) = 0xFFFFFFFF^(1<<(val1-14));
-	mmio32(GPIO_SETDATAOUT) = (1<<(val1-14));
+	val3 = map_gpio(val1);
+	mmio32(GPIO_OE) = mmio32(GPIO_OE) & ~(1 << val3);
+	mmio32(GPIO_SETDATAOUT) = (1<<(val3));
 	}
 	}
 
 	/* set low*/
         else{ 
-		if(val1<12){
+		if(val1<8){
         	__R30 = __R30 & ~( 1 << val1);
 		}
-	else
-		{
-			mmio32(GPIO_CLEARDATAOUT) = (1<<(val1-14));
+		else
+		{	
+			val3 = map_gpio(val1);
+			mmio32(GPIO_CLEARDATAOUT) = (1<<(val3));
 		}
         }
-	
+	PRUCFG_SYSCFG = PRUCFG_SYSCFG | SYSCFG_STANDBY_INIT;
 	if(single_command)
 		send_ret_value(val2 ? 1 : 0);
 }
