@@ -63,8 +63,6 @@ def t_HEX_INT(t):
 def t_INT(t):
 	'\d+'
 	t.value = int(t.value)
-	if t.value<1:
-		t.value=t.value*10
 	return t
 def t_FLOAT(t):
 	r'\.?[0-9]+'
