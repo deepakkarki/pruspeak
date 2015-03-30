@@ -33,11 +33,11 @@ reserved = [
 tokens = [
 	'VAR',
 	'INT',
-	
+	'FLOAT',
 	'GTE',	# '>='
 	'LTE',	# '<='
 	'GT',	# '>'
-	'LT',		# '<'
+	'LT',	# '<'
 	'EQ',	# '=='
 	'NEQ',	# '!='
 ] + reserved
@@ -62,7 +62,15 @@ def t_HEX_INT(t):
 
 def t_INT(t):
 	'\d+'
-	t.value = int(t.value)    
+	t.value = int(t.value)
+	if t.value<1:
+		t.value=t.value*10
+	return t
+def t_FLOAT(t):
+	r'\.?[0-9]+'
+	t.value = float(t.value)
+	t.value = t.value*1000
+	t.value = int(t.value)
 	return t
 
 def t_VAR(t):
@@ -77,7 +85,7 @@ def t_error(t):
 	print "Illegal character '%s'" % t.value[0]
 
 lexer = lex.lex()
-data =  '''SET DIO[myvar], 1'''
+data =  '''WAIT 10.345'''
 lexer.input(data)
 
 if __name__ == '__main__':
