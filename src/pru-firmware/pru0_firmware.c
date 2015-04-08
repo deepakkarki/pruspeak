@@ -76,11 +76,8 @@ int get_var_val(int addr)
 /*maps value to gpio modules*/
 int map_gpio(int val)
 {
-	if(val>7 && val<12){
-		return (val-6); // This is done because SET DIO[8], maps to GPIO0_2, thus 8 - 6 = 2
-	 }
-	if(val>11 && val < 19){ // GPIO0_6 missing ? can't find on headers.
-		return (val-5); // SET DIO[12] onwards maps to GPIO0_7, 12 - 5 = 7.
+	if (val >= 8) {
+		return ( val - 8 + 21 );
 	}
 }
 /*instruction handlers*/

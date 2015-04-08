@@ -5,7 +5,7 @@
 #define MS                      0x30d40 //number of clock cycles it takes for 1ms
 #define uS			0xC8    //number of clock cycles it take for 1uS
 /*max number of DIO pins*/
-#define MAX_DIO			20
+#define MAX_DIO			12
 
 /* max data area (in terms of index for var_loc[])*/
 #define MAX_DATA		239
@@ -21,10 +21,10 @@
 
 //GPIO0 module address
 #define mmio32(x) (*(volatile unsigned long *)(x))
-#define GPIO10 (0x44E07000)
-#define GPIO_CLEARDATAOUT (GPIO10 + 0x190)
-#define GPIO_SETDATAOUT (GPIO10 + 0x194)
-#define GPIO_OE (GPIO10 + 0x134)
+#define GPIO_1 (0x4804C000)
+#define GPIO_CLEARDATAOUT (GPIO_1 + 0x190)
+#define GPIO_SETDATAOUT (GPIO_1 + 0x194)
+#define GPIO_OE (GPIO_1 + 0x134)
 
 //DEBUG - Sets all output pins to high
 #define SYS_DEBUG       0
