@@ -79,6 +79,7 @@ int map_gpio(int val)
 	if (val >= 8) {
 		return ( val - 8 + 21 );
 	}
+	return (val);
 }
 /*instruction handlers*/
 
