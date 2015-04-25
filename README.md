@@ -13,6 +13,8 @@ This project enables dynamic control of the Beaglebone black's PRU (Programmable
 
 The [PRU] [2] is meant to be used for high speed jitter free IO control. Being independent from the linux scheduler and having direct access to the IO pins of the BeagleBone Black, PRU is ideal for offloading IO intensive tasks.
 
+**NOTE** :  PRU Speak will be refactored to use the new remote proc driver for ARM <-> PRU communication, the PRU Bridge. 
+
 ##How to use
 
 ```
