@@ -82,6 +82,7 @@ Run ```bash install.sh```
 - [ ] Add streams between PRU and ARM
 - [ ] Add ability to dynamically set frequency for PWM
 - [ ] More commands for qep, uart, hard-pwm etc
+- [ ] Integrate PRU bridge for transportation layer
 
 ##more detail on how to use
 -- TODO
