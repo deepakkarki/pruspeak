@@ -4,7 +4,7 @@ PRU Speak
 ##What is it
 
 PRU Speak is an implementation of the BotSpeak language for the PRU.
-This project enables dynamic control of the Beaglebone black's PRU (Programmable Realtime Unit) from the Linux userspace on ARM.
+This project enables dynamic control of the Beaglebone black's PRU (Programmable Realtime Unit) from the Linux userspace on ARM. For more information have a look at the [official PRU page](http://beagleboard.org/pru) on beagleboard.org
 
 **BotSpeak** is a robotics programming language designed to bridge the gap between small embedded systems such as the Raspberry Pi, BeagleBone, and Arduino.
 [See  http://botspeak.org/ and https://sites.google.com/site/botspeak/ for more information]
@@ -70,9 +70,6 @@ The system architecture of the project is well illustrated in this flow chart.
 
 Run ```bash install.sh```
 
-##Project structure
--- TODO : explain various dirs and files. 
-
 ##future work
 
 - [ ] Language bindings to Python and Node.js
@@ -84,19 +81,6 @@ Run ```bash install.sh```
 - [ ] More commands for qep, uart, hard-pwm etc
 - [ ] Integrate PRU bridge for transportation layer
 
-##more detail on how to use
--- TODO
-
-	language feature and limitations and 'gotcha' points ;)
-
-	[link to some other page (wiki maybe)]
-
-##examples
--- TODO
-
-	Lots of examples including 
-
-	[link to some other page (wiki maybe)]
 
 [1]: http://beagleboard.org/black
 [2]: http://elinux.org/BeagleBone_PRU_Notes
