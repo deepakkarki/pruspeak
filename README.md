@@ -66,6 +66,23 @@ The project consists of three main components
 The system architecture of the project is well illustrated in this flow chart.
 ![The PRU Speak Architecture](https://raw.githubusercontent.com/wiki/deepakkarki/pruspeak/PRU-Speak-Architecture.png)
 
+**The basic workflow is as follows**
+
+1. The user space component consists mainly of python code, and is responsible for interacting with the user. The user has 3 main ways to use PRUSpeak - through an open TCP port, through a FIFO or through an interactive shell. If you're a developer, you can use the direct `pruspeak` python api. 
+See examples [here](https://github.com/deepakkarki/pruspeak/blob/master/src/userspace_lib/example_code.py)
+
+2. Create the botspeak script you want to execute, and send it through any of the interfaces. The client side logic will process the commands, compile it to a custom byte code and dump it in a shared memory location. (shared between the userspace process and the PRU0)
+
+3. Once the bytecode is placed, the client side code will signal the same to the PRU0 via sysfs interface. The sysfs interfaces are created by the pruspeak kernel driver, which accepts the system calls made to it by the user space libs and forwards it to the PRUs.
+
+4. he PRU0 has a small VM running on it which can read the bytecode. Once PRU0 gets the control instructions, it will read the bytecode from the shared memory and begin execution.
+
+A simple but more detailed explanation can be found [here](https://goo.gl/09xJfa)
+
+A more detailed description of the design and implementation can be found [here](https://goo.gl/vonpEB)
+
+See some example code [here](https://github.com/deepakkarki/pruspeak/blob/master/src/userspace_lib/test_funcs.py) and [here](https://github.com/deepakkarki/pruspeak/blob/master/src/userspace_lib/example_code.py)
+
 ##Build from source
 
 Run ```bash install.sh```
