@@ -64,7 +64,8 @@ The project consists of three main components
   * The PRU firmware (PRU implementation of the BotSpeak interpreter)
 
 The system architecture of the project is well illustrated in this flow chart.
-![The PRU Speak Architecture](https://raw.githubusercontent.com/wiki/deepakkarki/pruspeak/PRU-Speak-Architecture.png)
+
+![The PRU Speak Architecture](https://goo.gl/J2uwTx)
 
 **The basic workflow is as follows**
 
