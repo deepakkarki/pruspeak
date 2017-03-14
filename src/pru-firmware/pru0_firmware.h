@@ -3,7 +3,7 @@
 #define IF_EVENT                PINTC_SRSR0 & (1 << EVENT_BIT)
 
 #define MS                      0x30d40 //number of clock cycles it takes for 1ms
-
+#define uS			0xC8    //number of clock cycles it take for 1uS
 /*max number of DIO pins*/
 #define MAX_DIO			12
 
@@ -18,6 +18,13 @@
 	sys calls ids
 	Different syscall values, aliases and their meaning
 */
+
+//GPIO0 module address
+#define mmio32(x) (*(volatile unsigned long *)(x))
+#define GPIO_1 (0x4804C000)
+#define GPIO_CLEARDATAOUT (GPIO_1 + 0x190)
+#define GPIO_SETDATAOUT (GPIO_1 + 0x194)
+#define GPIO_OE (GPIO_1 + 0x134)
 
 //DEBUG - Sets all output pins to high
 #define SYS_DEBUG       0
@@ -98,6 +105,7 @@ extern void sc_downcall(int (*handler)(u32 nr, u32 arg0, u32 arg1, u32 arg2, u32
 #define WAIT		20
 #define GOTO		21
 #define GET		22
+#define WAIT_64		23
 
 /*arithmetic instructions*/
 #define ADD_32		48
