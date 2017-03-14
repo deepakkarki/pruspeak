@@ -33,7 +33,7 @@ ENDSCRIPT
 RUN
 '''
 
-ret = pru_speak.execute_instruction(EX3)
+ret = pru_speak.execute_instruction(EX2)
 print ret
 
 while True:

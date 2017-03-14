@@ -5,7 +5,7 @@
 #define MS                      0x30d40 //number of clock cycles it takes for 1ms
 
 /*max number of DIO pins*/
-#define MAX_DIO			12
+#define MAX_DIO			20
 
 /* max data area (in terms of index for var_loc[])*/
 #define MAX_DATA		239
@@ -13,6 +13,13 @@
 /* start of DIO, AIO */
 #define DIO_OFF			240
 #define AIO_OFF			256
+
+//GPIO0 module address
+#define mmio32(x)   (*(volatile unsigned long *)(x))
+#define GPIO10 (0x44E07000)
+#define GPIO_CLEARDATAOUT (GPIO10 + 0x190)
+#define GPIO_SETDATAOUT (GPIO10 + 0x194)
+#define GPIO_OE (GPIO10 + 0x134)
 
 /* 
 	sys calls ids
