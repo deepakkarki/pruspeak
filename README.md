@@ -1,7 +1,7 @@
 PRU Speak
 ========
 
-##What is it
+## What is it
 
 PRU Speak is an implementation of the BotSpeak language for the PRU.
 This project enables dynamic control of the Beaglebone black's PRU (Programmable Realtime Unit) from the Linux userspace on ARM. For more information have a look at the [official PRU page](http://beagleboard.org/pru) on beagleboard.org
@@ -15,7 +15,7 @@ The [PRU] [2] is meant to be used for high speed jitter free IO control. Being i
 
 **NOTE** :  PRU Speak will be refactored to use the new remote proc driver for ARM <-> PRU communication, the PRU Bridge. 
 
-##How to use
+## How to use
 
 ```
 Installing
@@ -56,7 +56,7 @@ To try a simple blink example (blink P9_31):
 
 ```
 
-##How it works
+## How it works
 
 The project consists of three main components
   * The user space libraries 
@@ -84,11 +84,11 @@ A more detailed description of the design and implementation can be found [here]
 
 See some example code [here](https://github.com/deepakkarki/pruspeak/blob/master/src/userspace_lib/test_funcs.py) and [here](https://github.com/deepakkarki/pruspeak/blob/master/src/userspace_lib/example_code.py)
 
-##Build from source
+## Build from source
 
 Run ```bash install.sh```
 
-##future work
+## future work
 
 - [ ] Language bindings to Python and Node.js
 - [ ] Cleaner interfaces (for TCP and FIFO --to both r/w)
