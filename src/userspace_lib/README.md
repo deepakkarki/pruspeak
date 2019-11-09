@@ -513,11 +513,13 @@ WAIT x
 ```
 where **x** (the only operand) can be of type **C or V or Arr[v]**
 
-This is a 32 bit instruction.
+This is a 32 bit instruction if milis argument is given and 64 bit
+instruction if millis + micros argument is given.
 
 **opcode**
 ```c
-0x14 (20)
+0x14 (20)  for WAIT 100
+0x17 (23)  for WAIT 100.345
 ```
 **operation**
 ```

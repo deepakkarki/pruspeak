@@ -2,7 +2,7 @@
 #include "pru0_firmware.h"
 
 int var_loc[256];
-void wait(int);
+void wait(int,int);
 int pwm_val = 0;
 
 static void send_ret_value(int val)
@@ -73,12 +73,22 @@ int get_var_val(int addr)
 
 	return 0;
 }
-
+/*maps value to gpio modules*/
+int map_gpio(int val)
+{
+	if(val>7 && val<12){
+		return (val-6); // This is done because SET DIO[8], maps to GPIO0_2, thus 8 - 6 = 2
+	 }
+	if(val>11 && val < 19){ // GPIO0_6 missing ? can't find on headers.
+		return (val-5); // SET DIO[12] onwards maps to GPIO0_7, 12 - 5 = 7.
+	}
+}
 /*instruction handlers*/
 
 void dio_handler(int opcode, u32 inst)
 {
-	int val1, val2;
+	int val1, val2,val3;
+	PRUCFG_SYSCFG = PRUCFG_SYSCFG & (~SYSCFG_STANDBY_INIT);
 	if(opcode == SET_DIO_a){
 	/* SET DIO[c/v], c/v */
 		
@@ -102,15 +112,31 @@ void dio_handler(int opcode, u32 inst)
 		int addr = GET_BYTE(inst, 1) + index + 1;
 		val2 = var_loc[addr];
 	}
-	/* set hi*/
-	if(val2 && (val1 < MAX_DIO)){ 
-        	__R30 = __R30 | ( 1 << val1);
-        }
-
+	 /* set hi*/
+	if(val2 && (val1 < MAX_DIO)){
+	
+		if(val1<8){
+			__R30 = __R30 | ( 1 << val1);
+		}
+		else{
+			val3 = map_gpio(val1);
+			mmio32(GPIO_OE) = mmio32(GPIO_OE) & ~(1 << val3);
+			mmio32(GPIO_SETDATAOUT) = (1<<(val3));
+		}
+	}
 	/* set low*/
-        else{ 
-        	__R30 = __R30 & ~( 1 << val1);
-        }
+	else{
+		if(val1<8){
+			__R30 = __R30 & ~( 1 << val1);
+		}
+	
+		else{
+			val3 = map_gpio(val1);
+			mmio32(GPIO_CLEARDATAOUT) = (1<<(val3));
+		}
+	}
+
+	PRUCFG_SYSCFG = PRUCFG_SYSCFG | SYSCFG_STANDBY_INIT;
 	
 	if(single_command)
 		send_ret_value(val2 ? 1 : 0);
@@ -252,7 +278,7 @@ void array_dec_handler(int opcode, u32 inst)
 void wait_goto_get_handler(int opcode, u32 inst)
 {
 	int op = (GET_BYTE(inst, 2) >> 6);
-	int val;
+	int val,dec;
 	if(op == 0){
 	/* WAIT c*/
 		val = inst & 0xFFFF;
@@ -278,9 +304,14 @@ void wait_goto_get_handler(int opcode, u32 inst)
 	}
 	
 	if(opcode == WAIT){
-		wait(val);
+		wait(val,0);
 	}
-
+	
+	else if (opcode == WAIT_64){
+		inst = get_second_word();
+		dec = inst & 0xFFFF;
+		wait(val,dec);
+	}
 	else if (opcode == GOTO)
 		inst_pointer = val;
 
@@ -670,7 +701,7 @@ void check_event(void)
 
 }
 
-void wait(int ms)
+void wait(int ms,int us)
 {	
 	/* set the CMP0 reg value */
 	//PIEP_CMP_CMP0 =  MS * ms;
@@ -683,7 +714,7 @@ void wait(int ms)
 	PIEP_CMP_CFG |= CMP_CFG_CMP_EN(0);
 
         /* set the CMP0 reg value */
-        PIEP_CMP_CMP0 =  ((MS * ms) + PIEP_COUNT);// % 0xFFFFFFFF;//is the % op needed at all?
+        PIEP_CMP_CMP0 =  ((MS * ms) + (uS * us) + PIEP_COUNT);// % 0xFFFFFFFF;//is the % op needed at all?
 
 	/* clear the timer event for CMP0 incase it has been already set by mistake */
 	PIEP_CMP_STATUS = CMD_STATUS_CMP_HIT(0);
@@ -730,6 +761,7 @@ void execute_instruction()
 		break;
 	
 		case WAIT:
+		case WAIT_64:
 		case GOTO:
 		case GET:
 			wait_goto_get_handler(opcode, inst);

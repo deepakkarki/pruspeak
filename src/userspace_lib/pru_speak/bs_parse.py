@@ -295,7 +295,7 @@ def byte_code_dec_array(name, val):
 	return pack_byte(OPCODE, byte2, byte1, byte0)
 
 	
-def byte_code_single_op(cmd, val):
+def byte_code_single_op(cmd, val, flt):
 	'''
 	single operand instructions
 	e.g. WAIT, GOTO, GET
@@ -308,11 +308,10 @@ def byte_code_single_op(cmd, val):
 	}
 	OPCODE = opcode_dict[cmd]
 	byte2, byte1, byte0 = 0, 0, 0
-
+	byte7, byte6, byte5, byte4 = 0, 0, 0, 0
 	#incase wait or goto
 	if OPCODE < 22 and not script_mode:
 		return 0 #these inst only make sense in a script
-
 	if val.type == 'INT':
 	#case1 INT
 		byte2 = 0
@@ -323,9 +322,13 @@ def byte_code_single_op(cmd, val):
 		else:
 			byte0 = val.val & 0xFF #lower 8 bits
 			byte1 = (val.val >> 8) & 0xFF #higher 8 bits
+			if flt and OPCODE == 20:   #check if decimal delay (uS) is present for WAIT command
+				OPCODE = OPCODE + 3 #make WAIT opcode 23. now a 64 bit instruction
+				byte3=OPCODE
+				byte4 = flt.val & 0xFF #lower 8 bits of uS
+				byte5 = (flt.val >> 8) & 0xFF #higher 8 bits uS
+				return pack_byte(OPCODE, byte2, byte1, byte0), pack_byte(byte7, byte6, byte5, byte4)
 
-		
-		
 	elif val.any_var:
 	#Var or Arr[Var]
 		byte2 = 0b01 << 6
@@ -668,20 +671,25 @@ def p_inst_LBL(p):
 def add_label(byte_code, index):
 	return (byte_code & 0xFFFF0000) | (index & 0xFFFF)
 
-def p_inst_WAIT(p):
+def p_inst_WAIT_int(p):
 	'''inst : WAIT val'''
-	#print "WAIT command - val :", p[2]
-	p[0] = byte_code_single_op(p[1], p[2])
+	print "WAIT command - val :", p[2].val
+	p[0] = byte_code_single_op(p[1], p[2],0)
+
+def p_inst_WAIT_float(p):
+	'''inst : WAIT val val'''            #WAIT INT FLOAT
+	print "WAIT command - val :", p[3].val
+	p[0] = byte_code_single_op(p[1], p[2],p[3])
 
 def p_inst_GOTO(p):
 	'''inst : GOTO val'''
 	#print "GOTO command - val :", p[2]
-	p[0] = byte_code_single_op(p[1], p[2])
+	p[0] = byte_code_single_op(p[1], p[2],0)
 	
 def p_inst_GET(p):
 	'''inst : GET val'''
 	#print "GET command - val :", p[2]
-	p[0] = byte_code_single_op(p[1], p[2])
+	p[0] = byte_code_single_op(p[1], p[2],0)
 
 def p_inst_IF(p):
 	'''inst : IF '(' val cond val ')' GOTO val'''
@@ -746,6 +754,11 @@ def p_val_INT(p):
 	'''val : INT'''
 	#print p[1]
 	p[0] = Value('INT', p[1])
+
+def p_val_FLOAT(p):
+	'''val : FLOAT'''
+	#print p[1]
+	p[0] = Value('FLOAT', p[1])
 
 def p_val_VAR(p):
 	'''val : VAR'''
@@ -827,7 +840,7 @@ if __name__ == '__main__':
 	try :
 		print parser.parse("SET var1, 4")
 		#print pru_var_count
-		print parser.parse("GET DIO[0]")
+		print parser.parse("WAIT 100.34")
                 #print pru_var_count
 		print parser.parse("SET var1, DIO[0]")
 	except Exception as e:
